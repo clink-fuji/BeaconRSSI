@@ -45,20 +45,20 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 	double lowPassX,lowPassY,lowPassZ;		// 加速度を加重平均のため記録する
 	double rawAx,rawAy,rawAz;				// ハイパスフィルタを通った値
     
-	private static double azimuth ,pitch , roll;	// 方位、ピッチ、ロール
-	private static double ax,ay,az;			// 各方向加速度
-	private static int vx,vy,vz;				// 各方向速度
-	private static int dvx,dvy,dvz;			// 各方向微小速度
-	private static int x,y,z;					// 各方向移動距離
-	private static int dx,dy,dz;				// 各方向微小移動距離
+	private static double yaw,pitch,roll;	// 方位、ピッチ、ロール
+	private static double inityaw ,initpitch ,initroll;	// 方位、ピッチ、ロール初期値
+	
+	private static double ax,ay,az;					// 各方向加速度
+	private static int vx,vy,vz , dvx,dvy,dvz;		// 各方向速度、微小速度
+	private static int x,y,z , dx,dy,dz;				// 各方向移動距離、微小距離
 	private static long nowTime;
-	private static long oldTime;				// 前回測定時刻
+	private static long oldTime;					// 前回測定時刻
 
 	static double offAx = +0.0;		// オフセット
 	static double offAy = -0.0;		// オフセット
 	static double offAz = +0.0;		// オフセット
-	static double k = 0.1;	// 加重平均の係数
-	static int snflag = 0;	// センサ初期化フラグ
+	static double k = 0.3;	// 加重平均の係数
+	static int asnflag = 0,jsnflag = 0;	// センサ初期化フラグ
     
 	// Bluetooth関係の変数
     private static final int REQUEST_ENABLE_BLUETOOTH = 1;
@@ -178,9 +178,10 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
                // setContentView(mResultView);
 
 			    // フラグをセット
-			    snflag = 0;
+			    asnflag = 0;
+			    jsnflag = 0;
 			    
-                azimuth = pitch = roll = 0;			// 方位、ピッチ、ロール
+                yaw = pitch = roll = 0;			// 方位、ピッチ、ロール
             	lowPassX = lowPassY = 0;	// オフセット
             	lowPassZ = 9.8066;
             	rawAx = rawAy = rawAz = 0;			// 初期化
@@ -259,8 +260,9 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
                     // 時刻、緯度、経度を表示する
                     mResultView.append("時刻："+locationArray[0]+"\t\t緯度："+locationArray[1]+"  経度："+locationArray[2]+"\n");
                     // 加速度と傾きを表示する
-                    mResultView.append( "X軸加速度:"+senvalues[0]+"　Y軸加速度:"+senvalues[1]+"　Z軸加速度:"+senvalues[2]+"\nQ:"+senvalues[3]+"　P:"  +senvalues[4]+"　R:"  +senvalues[5]+"\n");
-                    mResultView.append( "rawAx:"+rawAx+"\trawAy:"+rawAy+"\trawAz:"+rawAz+"\nax:"+ax+"\tay:"+ay+"\taz:"+az+"\n\n");
+                    mResultView.append( "X軸a:"+senvalues[0]+"　Y軸a:"+senvalues[1]+"　Z軸a:"+senvalues[2]+"\n");
+                    mResultView.append( "Y:"+senvalues[3]+"\t\t\tyaw："+yaw+"\nP:"  +senvalues[4]+"\t\t\tpitch："+pitch+"\nR:"  +senvalues[5]+"\t\t\troll："+roll+"\n");
+                    mResultView.append( "rawAx:"+rawAx+"\n rawAy:"+rawAy+"\n rawAz:"+rawAz+"\n以下座標変換後の値\nax:"+ax+"mm/s^2\n ay:"+ay+"mm/s^2\n az:"+az+"mm/s^2\n\n");
 
                     // 微小速度を表示する
                     mResultView.append("dvx:"+dvx+"mm/s\tdvY:"+dvy+"mm/s\tdvz:"+dvz+"mm/s\n");
@@ -386,7 +388,6 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 			@Override
 		    //センサーリスナーの処理(5)
 		    public void onSensorChanged(SensorEvent event) {
-				int muda;
 		        //加速度の取得0
 		        if (event.sensor==accelerometer) {
 		            senvalues[0]=event.values[0];	// 取得した値を配列に保存
@@ -397,7 +398,6 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 					lowPassX += (senvalues[0] - lowPassX) * k;
 					lowPassY += (senvalues[1] - lowPassY) * k;
 					lowPassZ += (senvalues[2] - lowPassZ) * k;
-	
 					// High Pass Filter
 					rawAx = senvalues[0] - lowPassX;
 					rawAy = senvalues[1] - lowPassY;
@@ -414,51 +414,62 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 		            senvalues[4]=event.values[1];
 		            senvalues[5]=event.values[2];
 		            
-				    azimuth = senvalues[3];
-				    pitch = senvalues[4];
-				    roll = senvalues[5];
+		            if(jsnflag ==0){
+					    inityaw =  senvalues[3];
+					    initpitch =  senvalues[4];
+					    initroll =  senvalues[5];
+		            	// フラグをセット
+					    jsnflag = 1;
+		            }
+					yaw = senvalues[3] -inityaw;
+					pitch = senvalues[4] -initpitch;
+					roll = senvalues[5] -initroll;
+
+					double nPitchRad = Math.toRadians(-pitch); // 各変数をラジアンへ変換、n means negative
+					double nRollRad = Math.toRadians(-roll);
+					double nyawRad = Math.toRadians(-yaw);
+		            
 					Log.d("Count","回転");
 			// ***********************************************************
 					// ピッチ
-					double nPitchRad = Math.toRadians(-pitch); // n means negative
 					double sinNPitch = Math.sin(nPitchRad);
 					double cosNPitch = Math.cos(nPitchRad);
 					// ロール
-					double nRollRad = Math.toRadians(-roll);
 					double sinNRoll = Math.sin(nRollRad);
 					double cosNRoll = Math.cos(nRollRad);
 					// 方位（アジマス）
-					double nAzimuthRad = Math.toRadians(-azimuth);
-					double sinNAzimuth = Math.sin(nAzimuthRad);
-					double cosNAzimuth = Math.cos(nAzimuthRad);
+					double sinNyaw = Math.sin(nyawRad);
+					double cosNyaw = Math.cos(nyawRad);
+		        
 					// 一時退避変数
 					double bx, by; 
 					bx = rawAx * cosNRoll + rawAz * sinNRoll;
 					by = rawAx * sinNPitch * sinNRoll + rawAy * cosNPitch - rawAz * sinNPitch * cosNRoll;
-					// 端末内部の座標から実空間での座標へ変換
-					az = (-rawAx * cosNPitch * sinNRoll + rawAy * sinNPitch * cosNRoll + rawAz * cosNPitch * cosNRoll)*1000;
-					ax = (bx * cosNAzimuth - by * sinNAzimuth)*1000;
-					ay = (bx * sinNAzimuth + by * cosNAzimuth)*1000;
-		        }
-		        Log.d("Sensor", "X軸加速度:"+senvalues[0]+"　Y軸加速度:"+senvalues[1]+"　Z軸加速度:"+senvalues[2]+"\n" +
-		        		"方位:"+senvalues[3]+"　ピッチ:"  +senvalues[4]+"　ロール:"  +senvalues[5]);
+					// 端末内部の座標から実空間での座標へ変換し、ローパスフィルタを通す
+					ax += ((bx * cosNyaw - by * sinNyaw)*1000 - ax )*k ;
+					ay += ((bx * sinNyaw + by * cosNyaw)*1000 - ay )*k ;
+					az += ((-rawAx * cosNPitch * sinNRoll + rawAy * sinNPitch * cosNRoll + rawAz * cosNPitch * cosNRoll)*1000 - az )*k ;
+			}
 
 			   // ax, ay, az が求まった後で
 			   nowTime = System.currentTimeMillis();	//システムの現在時刻をミリ秒（long型の数値）で取得
 			   long interval = nowTime - oldTime; // intervalをミリ秒から秒へ変換
-			   oldTime = nowTime;			
-	           if(snflag == 1){
+			   oldTime = nowTime;
+		        Log.d("Sensor", interval+"ms X軸加速度:"+senvalues[0]+"　Y軸加速度:"+senvalues[1]+"　Z軸加速度:"+senvalues[2]+"\n" +
+		        		"方位:"+senvalues[3]+"　ピッチ:"  +senvalues[4]+"　ロール:"  +senvalues[5]);
+			   
+	           if(asnflag == 1){
 	        	   // ***********************************************************
 	        	   // 加速度を積分する
-	        	   dvx = (int) (ax * interval/1000); // 速度[mm/s] にする
+	        	   dvx = (int) (ax * interval/1000); // 速度[mm/s] の変化分にする
 	        	   dvy = (int) (ay * interval/1000);
 	        	   dvz = (int) (az * interval/1000);
-	        	   vx += dvx;
+	        	   vx += dvx;	// 速度に変化分を足しこむ
 	        	   vy += dvy;
 	        	   vz += dvz;
 	        	   
 	        	   
-	        	   dx = (int) (vx * interval/1000);	// 距離[mm] にする
+	        	   dx = (int) (vx * interval/1000);	// 距離[mm] の変化分にする
 	        	   dy = (int) (vy * interval/1000);
 	        	   dz = (int) (vz * interval/1000);
 	        	   x += dx/10;						// 距離[cm] にする
@@ -469,7 +480,7 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 	            	vx = vy = vz = 0;					//　速度初期化
 	            	x = y = z = 0 ;						//　移動距離初期化
 	            	// フラグをセット
-				    snflag = 1;
+				    asnflag = 1;
 	            }
 			}
 
