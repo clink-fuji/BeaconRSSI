@@ -2,7 +2,7 @@ package com.example.beaconrssi;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.bluetooth.BluetoothAdapter;	//BT‚Å‚àBLE‚Å‚à‚±‚Ìˆês‚Å—Ç‚¢
+import android.bluetooth.BluetoothAdapter;	//BTã§ã‚‚BLEã§ã‚‚ã“ã®ä¸€è¡Œã§è‰¯ã„
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Intent;
@@ -36,37 +36,37 @@ import java.util.*;
 
 import android.util.Log;
 
-// ƒ}ƒjƒtƒFƒXƒgƒtƒ@ƒCƒ‹(`Manifest.xml)‚ÉGPS‚Ìƒp[ƒ~ƒbƒVƒ‡ƒ“‚ğ’Ç‰Á‚·‚é‚±‚ÆII
+// ãƒãƒ‹ãƒ•ã‚§ã‚¹ãƒˆãƒ•ã‚¡ã‚¤ãƒ«(ï½Manifest.xml)ã«GPSã®ãƒ‘ãƒ¼ãƒŸãƒƒã‚·ãƒ§ãƒ³ã‚’è¿½åŠ ã™ã‚‹ã“ã¨ï¼ï¼
 public class MainActivity extends Activity implements LocationListener,SensorEventListener {
-    private SensorManager sensorManager;		//ƒZƒ“ƒT[ƒ}ƒl[ƒWƒƒ
-    private Sensor        accelerometer;		//‰Á‘¬“xƒZƒ“ƒT[
-    private Sensor        orientation;  		//‰ñ“]ƒZƒ“ƒT[
-//    private Sensor        gyroscope;			//ƒWƒƒƒCƒƒXƒR[ƒv
-    private Sensor        magneticField;  		//’n¥‹CƒZƒ“ƒT[
-    private double[] senvalues=new double[6];	//‰Á‘¬“x‚ÆŒX‚«’l
-	private LocationManager manager = null; 	// GPS‘ªˆÊ‚É—p‚¢‚é
+    private SensorManager sensorManager;		//ã‚»ãƒ³ã‚µãƒ¼ãƒãƒãƒ¼ã‚¸ãƒ£
+    private Sensor        accelerometer;		//åŠ é€Ÿåº¦ã‚»ãƒ³ã‚µãƒ¼
+    private Sensor        orientation;  		//å›è»¢ã‚»ãƒ³ã‚µãƒ¼
+//    private Sensor        gyroscope;			//ã‚¸ãƒ£ã‚¤ãƒ­ã‚¹ã‚³ãƒ¼ãƒ—
+    private Sensor        magneticField;  		//åœ°ç£æ°—ã‚»ãƒ³ã‚µãƒ¼
+    private double[] senvalues=new double[6];	//åŠ é€Ÿåº¦ã¨å‚¾ãå€¤
+	private LocationManager manager = null; 	// GPSæ¸¬ä½ã«ç”¨ã„ã‚‹
 
-	private double yaw,pitch,roll;	// •ûˆÊAƒsƒbƒ`Aƒ[ƒ‹
-	private double inityaw ,initpitch ,initroll;	// •ûˆÊAƒsƒbƒ`Aƒ[ƒ‹‰Šú’l
+	private double yaw,pitch,roll;	// æ–¹ä½ã€ãƒ”ãƒƒãƒã€ãƒ­ãƒ¼ãƒ«
+	private double inityaw ,initpitch ,initroll;	// æ–¹ä½ã€ãƒ”ãƒƒãƒã€ãƒ­ãƒ¼ãƒ«åˆæœŸå€¤
 	
-	private double lowPassX,lowPassY,lowPassZ;		// ‰Á‘¬“x‚ğ‰Ád•½‹Ï‚Ì‚½‚ß‹L˜^‚·‚é
-	private double rawAx,rawAy,rawAz;				// ƒnƒCƒpƒXƒtƒBƒ‹ƒ^‚ğ’Ê‚Á‚½’l
-	private double ax,ay,az;				// Še•ûŒü‰Á‘¬“x
-	private double vx,vy,vz , dvx,dvy,dvz;	// Še•ûŒü‘¬“xA”÷¬‘¬“x
-	private double x,y,z , dx,dy,dz;		// Še•ûŒüˆÚ“®‹——£A”÷¬‹——£
-//	private double xgyro,ygyro,zgyro ;	// Še•ûŒüŠe‰Á‘¬“xiƒWƒƒƒCƒj
+	private double lowPassX,lowPassY,lowPassZ;		// åŠ é€Ÿåº¦ã‚’åŠ é‡å¹³å‡ã®ãŸã‚è¨˜éŒ²ã™ã‚‹
+	private double rawAx,rawAy,rawAz;				// ãƒã‚¤ãƒ‘ã‚¹ãƒ•ã‚£ãƒ«ã‚¿ã‚’é€šã£ãŸå€¤
+	private double ax,ay,az;				// å„æ–¹å‘åŠ é€Ÿåº¦
+	private double vx,vy,vz , dvx,dvy,dvz;	// å„æ–¹å‘é€Ÿåº¦ã€å¾®å°é€Ÿåº¦
+	private double x,y,z , dx,dy,dz;		// å„æ–¹å‘ç§»å‹•è·é›¢ã€å¾®å°è·é›¢
+//	private double xgyro,ygyro,zgyro ;	// å„æ–¹å‘å„åŠ é€Ÿåº¦ï¼ˆã‚¸ãƒ£ã‚¤ãƒ­ï¼‰
 	private long nowTime;
-	private long oldTime;				// ‘O‰ñ‘ª’è
+	private long oldTime;				// å‰å›æ¸¬å®šæ™‚åˆ»
 	long interval;
 
-	static double offAx = -0.000;		// ƒIƒtƒZƒbƒg0.0072
-	static double offAy = -0.000;		// ƒIƒtƒZƒbƒg0.0021
-	static double offAz = -0.000;		// ƒIƒtƒZƒbƒg0.0053
-	static double k = 0.95;				// ‰Ád•½‹Ï‚ÌŒW” ÅVŒv‘ª’l‚Ìd‚İ
-	private int asnflag = 0,jsnflag = 0;	// ƒZƒ“ƒT‰Šú‰»ƒtƒ‰ƒO
+	static double offAx = -0.000;		// ã‚ªãƒ•ã‚»ãƒƒãƒˆ0.0072
+	static double offAy = -0.000;		// ã‚ªãƒ•ã‚»ãƒƒãƒˆ0.0021
+	static double offAz = -0.000;		// ã‚ªãƒ•ã‚»ãƒƒãƒˆ0.0053
+	static double k = 0.95;				// åŠ é‡å¹³å‡ã®ä¿‚æ•° æœ€æ–°è¨ˆæ¸¬å€¤ã®é‡ã¿
+	private int asnflag = 0,jsnflag = 0;	// ã‚»ãƒ³ã‚µåˆæœŸåŒ–ãƒ•ãƒ©ã‚°
     
 	
-	//ƒZƒ“ƒT‰ü•Ï@‚±‚±‚©‚ç***********************************************************
+	//ã‚»ãƒ³ã‚µæ”¹å¤‰ã€€ã“ã“ã‹ã‚‰***********************************************************
 	SensorEventListener mSensorEventListener;
 	float[] accelerometerValues = new float[3];
 	float[] geomagneticMatrix = new float[3];
@@ -79,82 +79,120 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
     float[] I = new float[16];
 	
 	boolean sensorReady;
-	//ƒZƒ“ƒT‰ü•Ï@‚±‚±‚Ü‚Å***********************************************************
-	// BluetoothŠÖŒW‚Ì•Ï”
+	//ã‚»ãƒ³ã‚µæ”¹å¤‰ã€€ã“ã“ã¾ã§***********************************************************
+	// Bluetoothé–¢ä¿‚ã®å¤‰æ•°
     private static final int REQUEST_ENABLE_BLUETOOTH = 1;
 	static BluetoothAdapter mBluetoothAdapter;
     private TextView mResultView;
     
-    // ƒ‰ƒCƒuƒ‰ƒŠ‚ğg—p‚µ‚È‚¢BluetoothŠÖŒW‚Ì•Ï”
+    // ãƒ©ã‚¤ãƒ–ãƒ©ãƒªã‚’ä½¿ç”¨ã—ãªã„Bluetoothé–¢ä¿‚ã®å¤‰æ•°
 	int BCONmajor;
 	int BCONminor;
 	String BCONuuid;
 	    
-    //ŠÄ‹‘ÎÛ‚Æ‚È‚éƒr[ƒRƒ“‚Ì’l
+    //ç›£è¦–å¯¾è±¡ã¨ãªã‚‹ãƒ“ãƒ¼ã‚³ãƒ³ã®å€¤
     private static final String TARGET_UUID = "00000000-EA00-1001-B000-001C4D25E26A";
-    // ƒr[ƒRƒ“‚Ì‚Q‚Â‚ÌID‚ÌÅ‘å’l
+    // ãƒ“ãƒ¼ã‚³ãƒ³ã®ï¼’ã¤ã®IDã®æœ€å¤§å€¤
     private static final int TARGET_MAJOR = 1;
     private static final int TARGET_MINOR = 5;
-    // ƒr[ƒRƒ“‚Ìidentifier‚ğİ’è‚·‚é”z—ñ
+    // ãƒ“ãƒ¼ã‚³ãƒ³ã®identifierã‚’è¨­å®šã™ã‚‹é…åˆ—
     String beaconIDArray[][] = {{"Zero-Zero","Zero-One","Zero-Two","Zero-Three","Zero-Four","Zero-Five"},{"One-Zero","One-One","One-Two","One-Three","One-Four","One-Five"}};
-    // ”­Œ©‚µ‚½ƒr[ƒRƒ“‚ğ‹L˜^‚·‚é”z—ñ
+    // ç™ºè¦‹ã—ãŸãƒ“ãƒ¼ã‚³ãƒ³ã‚’è¨˜éŒ²ã™ã‚‹é…åˆ—
     int beaconArray[][] = new int[TARGET_MAJOR+1][TARGET_MINOR+1];
-    // ”­Œ©‚µ‚½ƒr[ƒRƒ“‚ÌRSSI‚ğ‹L˜^‚·‚é”z—ñ
+    // ç™ºè¦‹ã—ãŸãƒ“ãƒ¼ã‚³ãƒ³ã®RSSIã‚’è¨˜éŒ²ã™ã‚‹é…åˆ—
     int beaconRSSIArray[][] = new int[TARGET_MAJOR+1][TARGET_MINOR+1];	
-    // ”­Œ©‚µ‚½BluetoothƒfƒoƒCƒX‚Ì–¼‘O‚ÆRSSI‚ğ‹L˜^‚·‚é”z—ñ
+    // ç™ºè¦‹ã—ãŸBluetoothãƒ‡ãƒã‚¤ã‚¹ã®åå‰ã¨RSSIã‚’è¨˜éŒ²ã™ã‚‹é…åˆ—
     ArrayList<String> btarray = new ArrayList<String>();
     
-    // ˆÊ’u‚Æ‚ğ•Û‚·‚é”z—ñ
-    String locationArray[] = {"time","Latitude","Longitude"};// AˆÜ“xAŒo“x‚Ì‡
+    // ä½ç½®ã¨æ™‚åˆ»ã‚’ä¿æŒã™ã‚‹é…åˆ—
+    String locationArray[] = {"time","Latitude","Longitude"};// æ™‚åˆ»ã€ç·¯åº¦ã€çµŒåº¦ã®é †
 
-    // ƒnƒ“ƒhƒ‰‚ğ¶¬
+    // ãƒãƒ³ãƒ‰ãƒ©ã‚’ç”Ÿæˆ
     final Handler handler = new Handler();
     Timer mTimer = null;
     boolean getRSSI = false;
     
-    //ID•\¦—p•Ï”
+    //IDè¡¨ç¤ºç”¨å¤‰æ•°
     private TextView DrawBeaconList;
-    //Ï•\¦—pƒr[ƒRƒ“”­Œ©ƒtƒ‰ƒO
+    //æ¸ˆè¡¨ç¤ºç”¨ãƒ“ãƒ¼ã‚³ãƒ³ç™ºè¦‹ãƒ•ãƒ©ã‚°
     public int StampEndFlag[][] = new int[TARGET_MAJOR+1][TARGET_MINOR+1];
+    
+    //fAddData logåãå‡ºã—ç”¨å¤‰æ•°å®£è¨€**********************************************************************************
+    String fnametext = "time";
+    String foldernametime = "time";
+    String foldernametext = "";
+
+    String X = "0",Y = "0",Z = "0",Pitch = "0",Roll = "0",Azimuth = "0";
+    
+    String macadd;
+
+    String sUrl = "http://fuji.opendatalab.org/BeaconRSSI/catch.php";
+    String fileName = "BeaconRSSI.txt";
+    String saveText = "";
+    String filePath;
+    
+    int timetmp,timematch,timecntflag;
+    
+    //é€ä¿¡æ™‚é–“ç”¨å®šæ•°ï¼ˆæ•°å­—åˆ†ã”ã¨ã«é€ä¿¡ï¼‰
+    static final int TRANSMISSION = 5;
+    
+    //fAddData logåãå‡ºã—ç”¨å¤‰æ•°å®£è¨€ã“ã“ã¾ã§**********************************************************************************
+    
+    String strDirPath =
+    	    Environment.getExternalStorageDirectory().getAbsolutePath()
+    	    + "/data/data/com.example.beaconrssi/files/";
+
+
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-    	// ƒXƒŠ[ƒv‚µ‚È‚¢
+    	// ã‚¹ãƒªãƒ¼ãƒ—ã—ãªã„
     	getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);  
-    	// •Ï”‚È‚Ç‚ğİ’è‚·‚é
+    	// å¤‰æ•°ãªã©ã‚’è¨­å®šã™ã‚‹
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
               
-        // Bluetooth‚ÌƒTƒ|[ƒg‚ğŠm‚©‚ßAg—p‚ğ‹‚ß‚é
+        //fAddData logåãå‡ºã—ç”¨**********************************************************************************
+        WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE); 
+        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+         
+        macadd = wifiInfo.getMacAddress();
+
+        //ãƒ•ã‚¡ã‚¤ãƒ«ã‚¯ãƒªã‚¢***************************************************************************************************
+        textclear();
+        //**************************************************************************************************************
+        //fAddData logåãå‡ºã—ç”¨ã“ã“ã¾ã§**********************************************************************************
+
+        // Bluetoothã®ã‚µãƒãƒ¼ãƒˆã‚’ç¢ºã‹ã‚ã€ä½¿ç”¨ã‚’æ±‚ã‚ã‚‹
         boolean suportRet = supportConfirm();
         if(suportRet == false){
-        	//@Bluetooth”ñƒTƒ|[ƒg‚¾‚Á‚½ê‡‚Éƒg[ƒXƒg‚ğ•\¦‚·‚é
-			Log("Bluetooth‚ªƒTƒ|[ƒg‚³‚ê‚Ä‚¢‚Ü‚¹‚ñ");
+        	//ã€€Bluetoothéã‚µãƒãƒ¼ãƒˆã ã£ãŸå ´åˆã«ãƒˆãƒ¼ã‚¹ãƒˆã‚’è¡¨ç¤ºã™ã‚‹
+			Log("BluetoothãŒã‚µãƒãƒ¼ãƒˆã•ã‚Œã¦ã„ã¾ã›ã‚“");
         	finish();
         }else{
-	        //Bluetooth‚ªOff‚¾‚Á‚½ê‡‚Íƒ_ƒCƒAƒƒO•\¦‚µ‚ÄON‚É‚·‚é‚æ‚¤‘£‚·
+	        //BluetoothãŒOffã ã£ãŸå ´åˆã¯ãƒ€ã‚¤ã‚¢ãƒ­ã‚°è¡¨ç¤ºã—ã¦ONã«ã™ã‚‹ã‚ˆã†ä¿ƒã™
 	        boolean btEnabledRet = OnOffConfirm();
 	        if(btEnabledRet == false){
-		    //Bluetooth‚ªON‚È‚çƒXƒ‹[‚·‚é
+		    //BluetoothãŒONãªã‚‰ã‚¹ãƒ«ãƒ¼ã™ã‚‹
 	        }
         }
-        // ‚±‚Ì•”•ªAƒŒƒKƒV[BTg‚¨‚¤‚Æ‚µ‚½‚ªAŒ‹‹Ç‚¢‚ç‚È‚©‚Á‚½•”•ª
+        // ã“ã®éƒ¨åˆ†ã€ãƒ¬ã‚¬ã‚·ãƒ¼BTä½¿ãŠã†ã¨ã—ãŸãŒã€çµå±€ã„ã‚‰ãªã‹ã£ãŸéƒ¨åˆ†
    		/* Bluetooth Adapter */
     	final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
     	mBluetoothAdapter = bluetoothManager.getAdapter();
 
-    	// BluetoothAdapter‚ÌƒCƒ“ƒXƒ^ƒ“ƒXæ“¾
+    	// BluetoothAdapterã®ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹å–å¾—
     	mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     	
-// ‘ªˆÊŠÖŒW‚Ì‰Šú‰» ‚±‚±‚©‚ç ***********************************************************
-        // GPSƒT[ƒrƒXæ“¾
+// æ¸¬ä½é–¢ä¿‚ã®åˆæœŸåŒ– ã“ã“ã‹ã‚‰ ***********************************************************
+        // GPSã‚µãƒ¼ãƒ“ã‚¹å–å¾—
         manager = (LocationManager)getSystemService(LOCATION_SERVICE);
-// ‘ªˆÊŠÖŒW‚Ì‰Šú‰» ‚±‚±‚Ü‚Å ***********************************************************
-//@ƒZƒ“ƒT‹N“®•”@‚±‚±‚©‚ç***********************************************************
-        //ƒZƒ“ƒT[ƒ}ƒl[ƒWƒƒ‚Ìæ“¾(1)
+// æ¸¬ä½é–¢ä¿‚ã®åˆæœŸåŒ– ã“ã“ã¾ã§ ***********************************************************
+//ã€€ã‚»ãƒ³ã‚µèµ·å‹•éƒ¨ã€€ã“ã“ã‹ã‚‰***********************************************************
+        //ã‚»ãƒ³ã‚µãƒ¼ãƒãƒãƒ¼ã‚¸ãƒ£ã®å–å¾—(1)
         sensorManager=(SensorManager)getSystemService(Context.SENSOR_SERVICE);
-        //ƒZƒ“ƒT[‚Ìæ“¾(2)
+        //ã‚»ãƒ³ã‚µãƒ¼ã®å–å¾—(2)
         List<Sensor> list;
         list=sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
         if (list.size()>0) accelerometer=list.get(0);
@@ -165,87 +203,242 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 
 
         
-//@ƒZƒ“ƒT‹N“®•”@‚±‚±‚Ü‚Å***********************************************************
+//ã€€ã‚»ãƒ³ã‚µèµ·å‹•éƒ¨ã€€ã“ã“ã¾ã§***********************************************************
         
-        // ˆÈ‰º•\¦ŠÖŒW-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-        // readyƒeƒLƒXƒg‚ğ•\¦‚³‚¹‚é[uedaƒfƒoƒbƒO]
+        // ä»¥ä¸‹è¡¨ç¤ºé–¢ä¿‚-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+        // readyãƒ†ã‚­ã‚¹ãƒˆã‚’è¡¨ç¤ºã•ã›ã‚‹[uedaãƒ‡ãƒãƒƒã‚°]
         mResultView = (TextView)findViewById(R.id.textView);
         mResultView.setMovementMethod(ScrollingMovementMethod.getInstance());
         mResultView.setText("ready\n");
 
-        // ‚»‚ê‚¼‚ê‚Ìƒ{ƒ^ƒ“‚ğˆ—‚·‚é
-        setStartButton();	// ƒXƒ^[ƒgƒ{ƒ^ƒ“ŠÖŒW‚Ìˆ—ˆê®
-        setStopButton();	// ƒXƒgƒbƒvƒ{ƒ^ƒ“ŠÖŒW‚Ìˆ—ˆê®
+        // ãã‚Œãã‚Œã®ãƒœã‚¿ãƒ³ã‚’å‡¦ç†ã™ã‚‹
+        setStartButton();	// ã‚¹ã‚¿ãƒ¼ãƒˆãƒœã‚¿ãƒ³é–¢ä¿‚ã®å‡¦ç†ä¸€å¼
+        setStopButton();	// ã‚¹ãƒˆãƒƒãƒ—ãƒœã‚¿ãƒ³é–¢ä¿‚ã®å‡¦ç†ä¸€å¼
     }
     
-// ˆÈ‰ºAŠeíˆ—‚ğ‹Lq***********************************************************
+// ä»¥ä¸‹ã€å„ç¨®å‡¦ç†ã‚’è¨˜è¿°***********************************************************
     
-// ƒXƒ^[ƒgƒ{ƒ^ƒ“‚ÉŠÖ‚·‚éˆê®‚Ìˆ—
+    //fAddData logåãå‡ºã—ç”¨**********************************************************************************
+
+    // ãƒ•ã‚¡ã‚¤ãƒ«èª­ã¿æ›¸ãä½¿ã„æ–¹
+    //try {         
+    // ãƒ•ã‚¡ã‚¤ãƒ«æ›¸ãè¾¼ã¿
+    //saveText = "1"+ å¤‰æ•°1  + "," + "2" + å¤‰æ•°2  + ","+ å¤‰æ•°ï¼“ + "æ”¹è¡Œã‚³ãƒ¼ãƒ‰ï¼ˆä¸æ˜ï¼‰";//å¤‰æ•°ãƒ»æ–‡å­—ãƒ‡ãƒ¼ã‚¿ã®å…¥åŠ›
+    //saveText(fileName, saveText);   		//æ›¸ãè¾¼ã¿ã€€ãƒ•ã‚¡ã‚¤ãƒ«å,å…¥åŠ›ãƒ‡ãƒ¼ã‚¿ã®æŒ‡å®š 
+    // ãƒ•ã‚¡ã‚¤ãƒ«èª­ã¿è¾¼ã¿
+    //String str = loadText(fileName);		//èª­ã¿è¾¼ã¿ã€€ãƒ•ã‚¡ã‚¤ãƒ«ã®æŒ‡å®š
+    // TextViewã«èª­ã¿è¾¼ã‚“ã æ–‡å­—åˆ—ã‚’è¨­å®šï¼ˆæ›¸ãå‡ºã—ï¼‰
+    //((TextView)findViewById(R.id.textView)).setText(str);
+    //}catch(IOException e){        
+    //e.printStackTrace();   
+    //}
+     
+    //ã€€ãƒ•ã‚¡ã‚¤ãƒ«èª­ã¿æ›¸ãä½¿ã„æ–¹ã“ã“ã¾ã§
+    //æ›¸ãè¾¼ã¿å‡¦ç†
+    private void saveText(String fileName, String str) throws IOException {
+	   	 // ã‚¹ãƒˆãƒªãƒ¼ãƒ ã‚’é–‹ã
+	   	FileOutputStream output = this.openFileOutput(fileName, MODE_PRIVATE | MODE_APPEND);
+	   	 // æ›¸ãè¾¼ã¿
+	   	output.write(str.getBytes());
+	   	 // ã‚¹ãƒˆãƒªãƒ¼ãƒ ã‚’é–‰ã˜ã‚‹
+	   	output.close();
+  	}
+
+    private String loadText(String fileName) throws IOException {
+    	// ã‚¹ãƒˆãƒªãƒ¼ãƒ ã‚’é–‹ã
+    	FileInputStream input = this.openFileInput(fileName);
+    	// èª­ã¿è¾¼ã¿
+    	BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+    	StringBuffer strBuffer = new StringBuffer();
+    	String line;
+    	while ((line = reader.readLine()) != null) {
+    		strBuffer.append(line);
+    	}
+    	// ã‚¹ãƒˆãƒªãƒ¼ãƒ ã‚’é–‰ã˜ã‚‹
+    	reader.close();
+   	 	// èª­ã¿è¾¼ã‚“ã æ–‡å­—åˆ—ã‚’è¿”ã™
+    	return strBuffer.toString();
+    }
+    
+    private void exec_post() {
+    	String sTmp;
+        
+        // éåŒæœŸã‚¿ã‚¹ã‚¯ã‚’å®šç¾©
+        HttpPostTask task = new HttpPostTask(
+          this,
+          sUrl,
+
+          // ã‚¿ã‚¹ã‚¯å®Œäº†æ™‚ã«å‘¼ã°ã‚Œã‚‹UIã®ãƒãƒ³ãƒ‰ãƒ©
+          new HttpPostHandler(){
+
+            @Override
+            public void onPostCompleted(String response) {
+            // å—ä¿¡çµæœã‚’UIã«è¡¨ç¤º
+            	DrawBeaconList.setText( response );
+            }
+
+            @Override
+            public void onPostFailed(String response) {
+            	DrawBeaconList.setText( response );
+              Toast.makeText(
+                getApplicationContext(),
+                "ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸã€‚",
+                Toast.LENGTH_LONG
+              ).show();
+            }
+          }
+        );
+        
+        //macaddressã‚’ãƒ•ã‚©ãƒ«ãƒ€ã®åå‰ã¨ã—ã¦ä½¿ç”¨
+        sTmp = macadd;
+        task.addPostParam( "macadd", sTmp );
+        
+        //ãƒ•ã‚¡ã‚¤ãƒ«åã‚’é€ä¿¡
+        sTmp = fnametext;
+        task.addPostParam( "post_1", sTmp );
+
+        //logãƒ‡ãƒ¼ã‚¿ã®é€ä¿¡
+        try {
+			sTmp = loadText(fileName);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        task.addPostParam( "post_2", sTmp );
+        
+        FileOutputStream output = null;
+		try {
+			output = this.openFileOutput(fileName, MODE_PRIVATE);
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+		// æ›¸ãè¾¼ã¿
+		saveText = "";
+	   	try {
+			output.write(saveText.getBytes());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	   	 // ã‚¹ãƒˆãƒªãƒ¼ãƒ ã‚’é–‰ã˜ã‚‹
+	   	try {
+			output.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        // ã‚¿ã‚¹ã‚¯ã‚’é–‹å§‹
+        task.execute();
+    }
+
+
+
+    //ãƒ•ã‚¡ã‚¤ãƒ«ã‚¯ãƒªã‚¢***************************************************************************************************
+    private void textclear() {
+        FileOutputStream output = null;
+		try {
+			output = this.openFileOutput(fileName, MODE_PRIVATE);
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	   	 // æ›¸ãè¾¼ã¿
+	   	try {
+			output.write(saveText.getBytes());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	   	 // ã‚¹ãƒˆãƒªãƒ¼ãƒ ã‚’é–‰ã˜ã‚‹
+	   	try {
+			output.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    //**************************************************************************************************************
+
+
+    //fAddData logåãå‡ºã—ç”¨ã“ã“ã¾ã§**********************************************************************************
+
+// ã‚¹ã‚¿ãƒ¼ãƒˆãƒœã‚¿ãƒ³ã«é–¢ã™ã‚‹ä¸€å¼ã®å‡¦ç†
 	private void setStartButton() {
         Button startButton = (Button)findViewById(R.id.button);
         startButton.setText("start");
         startButton.setOnClickListener(new View.OnClickListener() {
-        // startƒ{ƒ^ƒ“ƒNƒŠƒbƒNƒCƒxƒ“ƒg
+        // startãƒœã‚¿ãƒ³ã‚¯ãƒªãƒƒã‚¯ã‚¤ãƒ™ãƒ³ãƒˆ
             @Override
             public void onClick(View view) {
         //        Intent serviceIntent = new Intent(MainActivity.this, BeaconService.class);
-         //       mResultView.append("start\n"); // [uedaƒfƒoƒbƒO•¶š—ñ‚ğ•\¦
-                // ŠÄ‹ƒXƒ^[ƒg
-        		/* Bluetooth LEƒfƒoƒCƒX‚ÌŒŸõ */
+         //       mResultView.append("start\n"); // [uedaãƒ‡ãƒãƒƒã‚°æ–‡å­—åˆ—ã‚’è¡¨ç¤º
+                // ç›£è¦–ã‚¹ã‚¿ãƒ¼ãƒˆ
+        		/* Bluetooth LEãƒ‡ãƒã‚¤ã‚¹ã®æ¤œç´¢ */
         		mBluetoothAdapter.startLeScan(mLeScanCallback);
 
-        	    // Bluetoothü•ÓƒfƒoƒCƒX‚ÌŒŸõŠJn
+        	    // Bluetoothå‘¨è¾ºãƒ‡ãƒã‚¤ã‚¹ã®æ¤œç´¢é–‹å§‹
         	    mBluetoothAdapter.startDiscovery();
         //        startService(serviceIntent);
                 getRSSI = true;
                 moniteringRssi();
-                mResultView.setBackgroundColor(0x33ff0000);	// ”wŒiF‚ğÔŒn‚É•Ï‚¦‚é
+                mResultView.setBackgroundColor(0x33ff0000);	// èƒŒæ™¯è‰²ã‚’èµ¤ç³»ã«å¤‰ãˆã‚‹
                // setContentView(mResultView);
 
-			    // ƒtƒ‰ƒO‚ğƒZƒbƒg
+			    // ãƒ•ãƒ©ã‚°ã‚’ã‚»ãƒƒãƒˆ
 			    asnflag = 0;
 			    jsnflag = 0;
 			    
-                yaw = pitch = roll = 0;		// •ûˆÊAƒsƒbƒ`Aƒ[ƒ‹
+                yaw = pitch = roll = 0;		// æ–¹ä½ã€ãƒ”ãƒƒãƒã€ãƒ­ãƒ¼ãƒ«
             	rawAx = rawAy =rawAz =0; 
                 
             }
         });
     }
 
-// ƒXƒgƒbƒvƒ{ƒ^ƒ“‚ÉŠÖ‚·‚éˆê®‚Ìˆ—
+// ã‚¹ãƒˆãƒƒãƒ—ãƒœã‚¿ãƒ³ã«é–¢ã™ã‚‹ä¸€å¼ã®å‡¦ç†
 	private void setStopButton() {
         Button stopButton = (Button)findViewById(R.id.button2);
         stopButton.setText("stop");
         stopButton.setOnClickListener(new View.OnClickListener() {
-        // stopƒ{ƒ^ƒ“ƒNƒŠƒbƒNƒCƒxƒ“ƒg
+        // stopãƒœã‚¿ãƒ³ã‚¯ãƒªãƒƒã‚¯ã‚¤ãƒ™ãƒ³ãƒˆ
             @Override
             public void onClick(View view) {
-                mResultView.setBackgroundColor(0x220000ff);	//”wŒiF‚ğÂŒn‚É•Ï‚¦‚é
-                mBluetoothAdapter.stopLeScan(mLeScanCallback);	//ƒXƒLƒƒƒ“‚ğ‚â‚ß‚é
+                mResultView.setBackgroundColor(0x220000ff);	//èƒŒæ™¯è‰²ã‚’é’ç³»ã«å¤‰ãˆã‚‹
+                mBluetoothAdapter.stopLeScan(mLeScanCallback);	//ã‚¹ã‚­ãƒ£ãƒ³ã‚’ã‚„ã‚ã‚‹
 
-		        // BluetoothŒŸõ’†~
+		        // Bluetoothæ¤œç´¢ä¸­æ­¢
                 if (mBluetoothAdapter.isDiscovering()) {
 		            	mBluetoothAdapter.cancelDiscovery();
 		            	}
                 getRSSI = false;
                 moniteringRssi();
-        		// ‰æ–Ê‚ğ‰Šú‰»***********************************************************
+        		// ç”»é¢ã‚’åˆæœŸåŒ–***********************************************************
                 DrawBeaconList = (TextView)findViewById(R.id.textView);
                 DrawBeaconList.setMovementMethod(ScrollingMovementMethod.getInstance());
                	DrawBeaconList.setText("\n"); 
-               	// ‰æ–Ê‰Šú‰»@‚±‚±‚Ü‚Å***********************************************************
+               	// ç”»é¢åˆæœŸåŒ–ã€€ã“ã“ã¾ã§***********************************************************
+
+                //fAddData logåãå‡ºã—ç”¨**********************************************************************************
+               	timecntflag=0;
+
+                exec_post();
+
+                //fAddData logåãå‡ºã—ç”¨ã“ã“ã¾ã§**********************************************************************************
+
             }
         });
     }
     
-// ƒCƒ“ƒ^[ƒoƒ‹‚Åƒr[ƒRƒ“‚ÌRSSI‚ğæ“¾‚·‚éˆ—
+// ã‚¤ãƒ³ã‚¿ãƒ¼ãƒãƒ«ã§ãƒ“ãƒ¼ã‚³ãƒ³ã®RSSIã‚’å–å¾—ã™ã‚‹å‡¦ç†
 	private void moniteringRssi() {
-        // ƒ^ƒCƒ}[‚ğ¶¬
+        // ã‚¿ã‚¤ãƒãƒ¼ã‚’ç”Ÿæˆ
         Timer mTimer = new Timer(true);
-    	if(getRSSI == true){	// ƒ^ƒCƒ}ˆ—‚ğs‚¤ê‡
-       //     Timer mTimer = new Timer(true);	// ‚±‚ÌˆÊ’u‚¾‚ÆƒXƒgƒbƒv‚µ‚½‚Æ‚«‚É—‚¿‚é
-	        // ƒXƒPƒWƒ…[ƒ‹‚ğİ’è
+    	if(getRSSI == true){	// ã‚¿ã‚¤ãƒå‡¦ç†ã‚’è¡Œã†å ´åˆ
+       //     Timer mTimer = new Timer(true);	// ã“ã®ä½ç½®ã ã¨ã‚¹ãƒˆãƒƒãƒ—ã—ãŸã¨ãã«è½ã¡ã‚‹
+	        // ã‚¹ã‚±ã‚¸ãƒ¥ãƒ¼ãƒ«ã‚’è¨­å®š
 	        mTimer.schedule(new TimerTask() {
 	        	public void run() {
 	        		handler.post(new Runnable() {
@@ -254,38 +447,38 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 	        			}
 	        		});
 	        		}
-	        	}, 1000, 1000); // ‰‰ñ‹N“®‚Ì’x‰„‚ÆüŠú‚ğw’èA
-        }else if(getRSSI == false){	// ƒ^ƒCƒ}ˆ—‚ğs‚È‚í‚È‚¢ê‡
+	        	}, 1000, 1000); // åˆå›èµ·å‹•ã®é…å»¶ã¨å‘¨æœŸã‚’æŒ‡å®šã€
+        }else if(getRSSI == false){	// ã‚¿ã‚¤ãƒå‡¦ç†ã‚’è¡Œãªã‚ãªã„å ´åˆ
             mTimer.cancel();
             mTimer.purge();
             mTimer = null;
         }
     }
 
-	// Beacon’Tõ “dŠE‹­“x‚Ìæ“¾(ƒCƒ“ƒ^[ƒoƒ‹ˆ—)*************************************************
+	// Beaconæ¢ç´¢ é›»ç•Œå¼·åº¦ã®å–å¾—(ã‚¤ãƒ³ã‚¿ãƒ¼ãƒãƒ«å‡¦ç†)*************************************************
 	    public void getRSSI(){
-			// ÀÛ‚Éˆ—‚ğ‚·‚é“à—e‚ğ‹Lq
-            mBluetoothAdapter.stopLeScan(mLeScanCallback);	//ƒXƒLƒƒƒ“‚ğ‚â‚ß‚é		// -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-M†‹­“x‚ğæ“¾‚·‚é@‚±‚±‚©‚ç
+			// å®Ÿéš›ã«å‡¦ç†ã‚’ã™ã‚‹å†…å®¹ã‚’è¨˜è¿°
+            mBluetoothAdapter.stopLeScan(mLeScanCallback);	//ã‚¹ã‚­ãƒ£ãƒ³ã‚’ã‚„ã‚ã‚‹		// -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-ä¿¡å·å¼·åº¦ã‚’å–å¾—ã™ã‚‹ã€€ã“ã“ã‹ã‚‰
 
-            // ‰æ–Ê‚ğ‰Šú‰»
+            // ç”»é¢ã‚’åˆæœŸåŒ–
             DrawBeaconList = (TextView)findViewById(R.id.textView);
             DrawBeaconList.setMovementMethod(ScrollingMovementMethod.getInstance());
            	DrawBeaconList.setText("\n"); 
            	
-           	if(getRSSI == true){	// ‘{õÀs’†‚È‚ç
-           	//¡‰ñ’Ç‰Á‚µ‚½•”•ª@‚±‚±‚©‚ç***********************************************************
-                    Time time = new Time("Asia/Tokyo");	//‚ğæ“¾
-                    time.setToNow();					//Œ»İ‚Ì‚ğİ’è
-                    locationArray[0] = time.year + "”N" + (time.month+1) + "Œ" + time.monthDay + "“ú  "+ time.hour + "" + time.minute + "•ª" + time.second + "•b";
+           	if(getRSSI == true){	// æœç´¢å®Ÿè¡Œä¸­ãªã‚‰
+           	//ä»Šå›è¿½åŠ ã—ãŸéƒ¨åˆ†ã€€ã“ã“ã‹ã‚‰***********************************************************
+                    Time time = new Time("Asia/Tokyo");	//æ™‚åˆ»ã‚’å–å¾—
+                    time.setToNow();					//ç¾åœ¨ã®æ™‚åˆ»ã‚’è¨­å®š
+                    locationArray[0] = time.year + "å¹´" + (time.month+1) + "æœˆ" + time.monthDay + "æ—¥  "+ time.hour + "æ™‚" + time.minute + "åˆ†" + time.second + "ç§’";
 
-                    // ƒVƒXƒeƒ€ AAˆÜ“xAŒo“x‚ğ•\¦‚·‚é
-                    mResultView.append("ƒVƒXƒeƒ€F"+nowTime+"\nF"+locationArray[0]+"\t\tˆÜ“xF"+locationArray[1]+"  Œo“xF"+locationArray[2]+"\n");
+                    // ã‚·ã‚¹ãƒ†ãƒ æ™‚åˆ» ã€æ™‚åˆ»ã€ç·¯åº¦ã€çµŒåº¦ã‚’è¡¨ç¤ºã™ã‚‹
+                    mResultView.append("ã‚·ã‚¹ãƒ†ãƒ æ™‚åˆ»ï¼š"+nowTime+"\næ™‚åˆ»ï¼š"+locationArray[0]+"\t\tç·¯åº¦ï¼š"+locationArray[1]+"  çµŒåº¦ï¼š"+locationArray[2]+"\n");
 
                     
-                    // ‰Á‘¬“x‚ÆŒX‚«‚ğ•\¦‚·‚é
-                    mResultView.append( "X²a :"+ (String.format("%4.2f", senvalues[0])) + "m/s^2\t\t"+
-                    					"Y²a :"+ (String.format("%4.2f", senvalues[1])) + "m/s^2\t\t"+
-                    					"Z²a :"+ (String.format("%4.2f", senvalues[2]))+"m/s^2\n");
+                    // åŠ é€Ÿåº¦ã¨å‚¾ãã‚’è¡¨ç¤ºã™ã‚‹
+                    mResultView.append( "Xè»¸a :"+ (String.format("%4.2f", senvalues[0])) + "m/s^2\t\t"+
+                    					"Yè»¸a :"+ (String.format("%4.2f", senvalues[1])) + "m/s^2\t\t"+
+                    					"Zè»¸a :"+ (String.format("%4.2f", senvalues[2]))+"m/s^2\n");
                     mResultView.append( "rawY :"+ (String.format("%4.1f", senvalues[3])) + "deg\t\t\t" +
                     					"rawP :"+ (String.format("%4.1f", senvalues[4])) + "deg\t\t\t"+
                     					"rawR :"+ (String.format("%4.1f", senvalues[5])) +"deg\n"+
@@ -296,48 +489,135 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
                     mResultView.append( "lowPassX:"+(String.format("%4.2f", lowPassX))+" m/s^2\t\t"+
                     					"lowPassY:"+(String.format("%4.2f", lowPassY))+" m/s^2\t\t"+
                     					"lowPassZ:"+(String.format("%4.2f", lowPassZ))+" m/s^2\n");
-                    mResultView.append( "ˆÈ‰º•ÏŠ·Œã‚Ì’l\n"+
+                    mResultView.append( "ä»¥ä¸‹å¤‰æ›å¾Œã®å€¤\n"+
                     					"ax:"+(String.format("%4.2f", ax))+" m/s^2\t"+
                     					"ay:"+(String.format("%4.2f", ay))+" m/s^2\t"+
                     					"az:"+(String.format("%4.2f", az))+" m/s^2\n\n");
                      
-                    // ”÷¬‘¬“x‚ğ•\¦‚·‚é
+                    // å¾®å°é€Ÿåº¦ã‚’è¡¨ç¤ºã™ã‚‹
                     mResultView.append( "dvx:"+(String.format("%5.2f",dvx))+"m/s\t"+
                     					"dvY:"+(String.format("%5.2f",dvy))+"m/s\t"+
                     					"dvz:"+(String.format("%5.2f",dvz))+"m/s\n");
-                    // ‘¬“x‚ğ•\¦‚·‚é
+                    // é€Ÿåº¦ã‚’è¡¨ç¤ºã™ã‚‹
                     mResultView.append("vX:"+(String.format("%5.2f",vx))+"m/s\tvY:"+(String.format("%5.2f",vy))+"m/s\tvZ:"+(String.format("%5.2f",vz))+"m/s\n\n");
-                    // ”÷¬‹——£‚ğ•\¦‚·‚é
+                    // å¾®å°è·é›¢ã‚’è¡¨ç¤ºã™ã‚‹
                     mResultView.append("dx:"+(String.format("%5.2f",dx))+"m\tdY:"+(String.format("%5.2f",dy))+"m\tdz:"+(String.format("%5.2f",dz))+"m\n");
-                    // ˆÚ“®‹——£‚ğ•\¦‚·‚é
+                    // ç§»å‹•è·é›¢ã‚’è¡¨ç¤ºã™ã‚‹
                     mResultView.append("X:"+(int)x+"m\tY:"+(int)y+"m\tz:"+(int)z+"m\n\n");
                     
-           	//¡‰ñ’Ç‰Á‚µ‚½•”•ª@‚±‚±‚Ü‚Å***********************************************************
+           	//ä»Šå›è¿½åŠ ã—ãŸéƒ¨åˆ†ã€€ã“ã“ã¾ã§***********************************************************
 
-                    // UUID‚ğ•\¦
+                    // UUIDã‚’è¡¨ç¤º
                     mResultView.append("UUID : "+TARGET_UUID+"\n");
-                    // ‰æ–Ê‚ÉID‚ÆM†‹­“x‚ğ•`‰æ     
+                                        
+              	    //fAddData logåãå‡ºã—ç”¨**********************************************************************************
+                    if((time.month+1) >= 10){
+                    	textlocationArray[0] = time.year + "/";
+                    	fnametext = time.year + "";
+                    }else{
+                    	textlocationArray[0] = time.year + "/0";
+                    	fnametext = time.year + "0";
+                    }
+                    if((time.monthDay) >= 10){
+                    	textlocationArray[0] = textlocationArray[0] + (time.month+1);
+                    	fnametext = fnametext + time.monthDay;
+                    }else{
+                    	textlocationArray[0] = textlocationArray[0] + "/0" + time.monthDay;
+                    	fnametext = fnametext + "0" + time.monthDay;
+                    }
+                    if((time.hour) >= 10){
+                    	textlocationArray[0] = textlocationArray[0] + "/" + time.hour;
+                    	fnametext = fnametext + time.hour;
+                    }else{
+                    	textlocationArray[0] = textlocationArray[0] + "/0"+ time.hour;
+                    	fnametext = fnametext + "0"+ time.hour;
+                    }
+                    if((time.minute) >= 10){
+                       	textlocationArray[0] = textlocationArray[0] + "/" + time.minute;
+                       	fnametext = fnametext + time.minute;
+                    }else{
+                    	textlocationArray[0] = textlocationArray[0] + "/0" + time.minute;
+                    	fnametext = fnametext + "0" + time.minute;
+                    }
+                    if((time.second) >= 10 ){
+                    	textlocationArray[0] = textlocationArray[0] + "/" + time.second + "";
+                    	fnametext = fnametext + time.second + "";
+                    }else{
+                    	textlocationArray[0] = textlocationArray[0] + "/0" + time.second + "";
+                    	fnametext = fnametext + "0" + time.second + "";
+                    }
+                    
+                    timematch = time.minute;
+                    if(timecntflag==1){
+                 	   timetmp = (timematch+TRANSMISSION)%60;
+                 	   timecntflag=2;
+                    }
+
+                    /*
+                    //X = xåº§æ¨™å¤‰æ•°ï¼Ÿï¼ˆå¤‰æ•°ãŒæ•°å€¤ãƒ‡ãƒ¼ã‚¿ã®å ´åˆã€€+ ""ã§Stringå‹ã«å¤‰æ›´)ã®ã‚ˆã†ã«ä»¥ä¸‹ã«å¿…è¦ãƒ‡ãƒ¼ã‚¿ã®ä»£å…¥ï¼ˆï¼Ÿã‚’å¤‰æ•°ã«å¤‰ãˆã‚‹ï¼‰
+                    X = ? + "";
+                    Y = ? + "";
+                   	Z = ? + "";
+                   	Pitch = ? + "";
+                   	Roll = ? + "";
+                   	Azimuth = ? + "";
+                    */
+                    
+                    // ãƒ•ã‚¡ã‚¤ãƒ«æ›¸ãè¾¼ã¿
+                    try {
+                    	saveText = textlocationArray[0] + "," + textlocationArray[1] + "," + textlocationArray[2] + "," + X + "," + Y + "," + Z + "," + Pitch + "," + Roll + "," + Azimuth + ",";
+
+                    	saveText(fileName, saveText);
+                    }catch(IOException e){
+                    	e.printStackTrace();
+                    }
+                	// ãƒ•ã‚¡ã‚¤ãƒ«æ›¸ãè¾¼ã¿ã“ã“ã¾ã§
+
+                    // ç”»é¢ã«IDã¨ä¿¡å·å¼·åº¦ã‚’æç”»
 		            for( int i=0 ; i <= TARGET_MAJOR ; i++ ){
 		    	        for( int j=0 ; j <= TARGET_MINOR ; j++ ){
-		    	        	mResultView.append("åID:" +i+ "•›ID:" + j+ "‹­“x:"+beaconRSSIArray[i][j]+"\n");
+		    	        	mResultView.append("ä¸»ID:" +i+ "å‰¯ID:" + j+ "å¼·åº¦:"+beaconRSSIArray[i][j]+"\n");
+
+	                    	// ãƒ•ã‚¡ã‚¤ãƒ«æ›¸ãè¾¼ã¿
+		                    try {
+		                    	saveText = /*i + "," + j + "," +*/ beaconRSSIArray[i][j] + ",";
+		                    	saveText(fileName, saveText);
+		                    }catch(IOException e){
+		                    	e.printStackTrace();
+		                    }
+	                    	// ãƒ•ã‚¡ã‚¤ãƒ«æ›¸ãè¾¼ã¿ã“ã“ã¾ã§
 		    	        }
-	    	        	mResultView.append("\n");	// ƒƒWƒƒ[ID‚²‚Æ‚É‰üs‚ğ‹²‚Ş
+	    	        	mResultView.append("\n");	// ãƒ¡ã‚¸ãƒ£ãƒ¼IDã”ã¨ã«æ”¹è¡Œã‚’æŒŸã‚€
 		    	    }
-	        	mResultView.append("\n");
-	        	//Bluetooth‚ÌƒŠƒXƒg‚ğ•\¦
-	            //ArrayList‚ğ1Œ‚¸‚Âæ‚èo‚µ‰æ–Ê‚É•\¦‚·‚é
+                	// ãƒ•ã‚¡ã‚¤ãƒ«æ›¸ãè¾¼ã¿
+                    try {
+                    	saveText = "\t";
+                    	saveText(fileName, saveText);
+                    }catch(IOException e){
+                    	e.printStackTrace();
+                    }
+                	// ãƒ•ã‚¡ã‚¤ãƒ«æ›¸ãè¾¼ã¿ã“ã“ã¾ã§
+
+	            if(timecntflag==2 && timematch==timetmp){
+	            	   timetmp = (timematch+TRANSMISSION)%60;
+	            	   exec_post();
+	            }
+                    //fAddData logåãå‡ºã—ç”¨ã“ã“ã¾ã§**********************************************************************************
+	        
+	      	    //Bluetoothã®ãƒªã‚¹ãƒˆã‚’è¡¨ç¤º
+	            //ArrayListã‚’1ä»¶ãšã¤å–ã‚Šå‡ºã—ç”»é¢ã«è¡¨ç¤ºã™ã‚‹
 	            Iterator<String> it = btarray.iterator();
 	            while (it.hasNext()) {
 	            	mResultView.append(it.next());
 	            }
-        		mBluetoothAdapter.startLeScan(mLeScanCallback);	//ƒXƒLƒƒƒ“ÄŠJ
+        		mBluetoothAdapter.startLeScan(mLeScanCallback);	//ã‚¹ã‚­ãƒ£ãƒ³å†é–‹
 		    }else if(getRSSI == false){
-		    	mResultView.append("stop\n");	// stop‚ğ•\¦
+		    	mResultView.append("stop\n");	// stopã‚’è¡¨ç¤º
 		    }
-			// -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-M†‹­“x‚ğæ“¾‚·‚é@‚±‚±‚Ü‚Å
+			// -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-ä¿¡å·å¼·åº¦ã‚’å–å¾—ã™ã‚‹ã€€ã“ã“ã¾ã§
 	    }
 
-	// ƒfƒBƒoƒCƒX–¼ARSSI‚ğæ“¾‚µAUUIDAmajorIDAminorID‚ğ¶¬‚·‚é
+	// ãƒ‡ã‚£ãƒã‚¤ã‚¹åã€RSSIã‚’å–å¾—ã—ã€UUIDã€majorIDã€minorIDã‚’ç”Ÿæˆã™ã‚‹
 	private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
 		@Override
 		public void onLeScan( final BluetoothDevice device , int rssi , byte[] scanRecord) {
@@ -363,7 +643,7 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 					+ IntToHex2(scanRecord[22] & 0xff)
 					+ IntToHex2(scanRecord[23] & 0xff)
 					+ IntToHex2(scanRecord[24] & 0xff);
-				// •Ï”‚ğ‘ã“ü‚·‚é
+				// å¤‰æ•°ã‚’ä»£å…¥ã™ã‚‹
 					BCONuuid = uuid ;		
 					//BCONmajor = IntToHex2(scanRecord[25] & 0xff) + IntToHex2(scanRecord[26] & 0xff);
 					BCONmajor=Integer.parseInt(IntToHex2(scanRecord[26] & 0xff));
@@ -374,18 +654,18 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 			}
 		}
 	};
-		// 10i”‚ğ16i”‚Ö•ÏŠ·‚·‚éB
+		// 10é€²æ•°ã‚’16é€²æ•°ã¸å¤‰æ›ã™ã‚‹ã€‚
 		private String IntToHex2(int i) {
 		char hex_2[] = {Character.forDigit((i>>4) & 0x0f,16),Character.forDigit(i&0x0f, 16)};
 		String hex_2_str = new String(hex_2);
 		return hex_2_str.toUpperCase();
 	}
 		
-		// BluetoothƒTƒ|[ƒg‚Ì—L–³”»’èˆ—***********************************************************  
-		// Bluetooth‚Ìg—p‚ÉŠÖ‚·‚éˆ—=========================================================
-		// Bluetooth‚Ì—L–³‚ğŠm‚©‚ß‚éˆ—**********************************************
+		// Bluetoothã‚µãƒãƒ¼ãƒˆã®æœ‰ç„¡åˆ¤å®šå‡¦ç†***********************************************************  
+		// Bluetoothã®ä½¿ç”¨ã«é–¢ã™ã‚‹å‡¦ç†=========================================================
+		// Bluetoothã®æœ‰ç„¡ã‚’ç¢ºã‹ã‚ã‚‹å‡¦ç†**********************************************
 		    private boolean supportConfirm(){
-		        //Bluetooth‚ªƒTƒ|[ƒg‚³‚ê‚Ä‚¢‚é‚©”Û‚©‚ğŠm‚©‚ß‚é
+		        //BluetoothãŒã‚µãƒãƒ¼ãƒˆã•ã‚Œã¦ã„ã‚‹ã‹å¦ã‹ã‚’ç¢ºã‹ã‚ã‚‹
 		        BluetoothAdapter Bt = BluetoothAdapter.getDefaultAdapter();
 		        if(Bt.equals(null)){
 		        	return false;
@@ -394,84 +674,84 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 		        return true;
 		    }
 
-		 // Bluetooth‚ÌON/OFF”»’èˆ—***********************************************************
-		 // Bluetooth‚ÌON/OFF‚ğŠm‚©‚ß‚éˆ—*******************************************
+		 // Bluetoothã®ON/OFFåˆ¤å®šå‡¦ç†***********************************************************
+		 // Bluetoothã®ON/OFFã‚’ç¢ºã‹ã‚ã‚‹å‡¦ç†*******************************************
 		    private boolean OnOffConfirm(){
-		    	//Bluetooth‚ªOn‚É‚È‚Á‚Ä‚¢‚é‚©‚Ç‚¤‚©‚ğŠm‚©‚ß‚é
+		    	//BluetoothãŒOnã«ãªã£ã¦ã„ã‚‹ã‹ã©ã†ã‹ã‚’ç¢ºã‹ã‚ã‚‹
 		    	boolean btEnable = mBluetoothAdapter.isEnabled();
 		    	if(btEnable == true){
 		    		return true;
 		    	}
-		    	//On‚Å‚È‚¢ê‡AOn‚É‚·‚é‚½‚ß‚Ìƒ_ƒCƒAƒƒO‚ğ•\¦‚·‚é
+		    	//Onã§ãªã„å ´åˆã€Onã«ã™ã‚‹ãŸã‚ã®ãƒ€ã‚¤ã‚¢ãƒ­ã‚°ã‚’è¡¨ç¤ºã™ã‚‹
 		    	Intent BtOn = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 		    	startActivityForResult(BtOn, REQUEST_ENABLE_BLUETOOTH);
 		    	return false;
 		    }
 
-		 // Bluetoothg—p—v‹ˆ—***********************************************************
-		 // Bluetooth‚Ìg—p‹–‰Â‚ğ‹‚ß‚éŠm‚©‚ß‚éˆ—**************************************
+		 // Bluetoothä½¿ç”¨è¦æ±‚å‡¦ç†***********************************************************
+		 // Bluetoothã®ä½¿ç”¨è¨±å¯ã‚’æ±‚ã‚ã‚‹ç¢ºã‹ã‚ã‚‹å‡¦ç†**************************************
 		    @Override
 		    protected void onActivityResult(int requestCode, int ResultCode, Intent date){
 		    	if(requestCode == REQUEST_ENABLE_BLUETOOTH){
 		    		if(ResultCode == Activity.RESULT_OK){
-		    			//Bluetooth‚ªOn‚¾‚Á‚½ê‡‚Ìˆ—
-		    			Log("Bluetooth‚ªON‚É‚È‚è‚Ü‚µ‚½");
+		    			//BluetoothãŒOnã ã£ãŸå ´åˆã®å‡¦ç†
+		    			Log("BluetoothãŒONã«ãªã‚Šã¾ã—ãŸ");
 		        		
 		    		}else{
-		                error("Bluetooth‚ğ—˜—po—ˆ‚Ü‚¹‚ñ");
+		                error("Bluetoothã‚’åˆ©ç”¨å‡ºæ¥ã¾ã›ã‚“");
 		    		}
 		    	}
 		    }
 
-//@ƒZƒ“ƒT@‚±‚±‚©‚ç***********************************************************		
+//ã€€ã‚»ãƒ³ã‚µã€€ã“ã“ã‹ã‚‰***********************************************************		
 		    @Override
 		    public void onSensorChanged(SensorEvent event) {
-		    	//ƒlƒ^Œ³@http://seesaawiki.jp/w/moonlight_aska/d/%BC%A7%B5%A4/%B2%C3%C2%AE%C5%D9%A5%BB%A5%F3%A5%B5%A1%BC%A4%C7%CA%FD%B0%CC%B3%D1/%B7%B9%A4%AD%A4%F2%B8%A1%BD%D0%A4%B9%A4%EB
-		        //‰Á‘¬“x‚Ìæ“¾
+		    	//ãƒã‚¿å…ƒã€€http://seesaawiki.jp/w/moonlight_aska/d/%BC%A7%B5%A4/%B2%C3%C2%AE%C5%D9%A5%BB%A5%F3%A5%B5%A1%BC%A4%C7%CA%FD%B0%CC%B3%D1/%B7%B9%A4%AD%A4%F2%B8%A1%BD%D0%A4%B9%A4%EB
+		        //åŠ é€Ÿåº¦ã®å–å¾—
 		        if(event.sensor == accelerometer){
 		            accelerometerValues[0] = event.values[0];
 		            accelerometerValues[1] = event.values[1];
 		            accelerometerValues[2] = event.values[2];
 		        }
-		        //’n¥‹C‚Ìæ“¾
+		        //åœ°ç£æ°—ã®å–å¾—
 		        if(event.sensor == magneticField){
 		            magneticValues[0] = event.values[0];
 		            magneticValues[1] = event.values[1];
 		            magneticValues[2] = event.values[2];
 		        }
 		        /*
-		        // ƒWƒƒƒCƒiŠp‰Á‘¬“xj‚Ìæ“¾
+		        // ã‚¸ãƒ£ã‚¤ãƒ­ï¼ˆè§’åŠ é€Ÿåº¦ï¼‰ã®å–å¾—
 		        if(event.sensor == gyroscope) {
-		        	gyroscopeValues[0] = event.values[0];	// X²‚Ì‰ñ“]‘¬“x
-		        	gyroscopeValues[1] = event.values[1];	// Y²‚Ì‰ñ“]‘¬“x
-		        	gyroscopeValues[2] = event.values[2];	// Z²‚Ì‰ñ“]‘¬“x
+		        	gyroscopeValues[0] = event.values[0];	// Xè»¸ã®å›è»¢é€Ÿåº¦
+		        	gyroscopeValues[1] = event.values[1];	// Yè»¸ã®å›è»¢é€Ÿåº¦
+		        	gyroscopeValues[2] = event.values[2];	// Zè»¸ã®å›è»¢é€Ÿåº¦
 		          }
 		          */
 
-			//ŒX‚«‚ÌZo-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+			//å‚¾ãã®ç®—å‡º-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 		       // if (magneticValues != null && accelerometerValues != null && gyroscopeValues != null) {
 		        if (magneticValues != null && accelerometerValues != null ) {
 
 		            SensorManager.getRotationMatrix(inR, I, accelerometerValues, magneticValues);
 
-		            //‰æ–Ê‚ÌŒü‚«‚É‚æ‚Á‚Ä²‚Ì•ÏX‰Â
+		            //ç”»é¢ã®å‘ãã«ã‚ˆã£ã¦è»¸ã®å¤‰æ›´å¯
 		            SensorManager.remapCoordinateSystem(inR, SensorManager.AXIS_X, SensorManager.AXIS_Y, outR);
 		            SensorManager.getOrientation(outR, orientationValues);
 		            
-		            //ƒ‰ƒWƒAƒ“‚©‚ç“x‚Ö‚Ì•ÏŠ· ‹y‚Ñ•ûˆÊ‚Ì”ÍˆÍ‚ğ-180`180“x‚©‚ç0`359“x‚É•ÏŠ·
+		            //ãƒ©ã‚¸ã‚¢ãƒ³ã‹ã‚‰åº¦ã¸ã®å¤‰æ› åŠã³æ–¹ä½ã®ç¯„å›²ã‚’-180ï½180åº¦ã‹ã‚‰0ï½359åº¦ã«å¤‰æ›
 		            /*
 		            float angle = radianToDegree(orientationValues[0]);
 		            if		(angle >= 0){ orientationValues[0] = angle;}
 		            else if (angle <  0){ orientationValues[0] = 360 + angle;}
 		            */
 
-		            orientationValues[0] = radianToDegree(orientationValues[0]);// ”ÍˆÍ‚Ì•ÏŠ·‚ğ‚µ‚È‚¢
+		            orientationValues[0] = radianToDegree(orientationValues[0]);// ç¯„å›²ã®å¤‰æ›ã‚’ã—ãªã„
 		            orientationValues[1] = radianToDegree(orientationValues[1]);
 		            orientationValues[2] = radianToDegree(orientationValues[2]);
 		        }
 		    
 
-		        //o—Í‚·‚é‚½‚ß‚Ì”z—ñ‚ÉŠi”[
+		        //å‡ºåŠ›ã™ã‚‹ãŸã‚ã®é…åˆ—ã«æ ¼ç´
 		        senvalues[0] = accelerometerValues[0]- offAx;
 		        senvalues[1] = accelerometerValues[1]- offAy;
 		        senvalues[2] = accelerometerValues[2]- offAz;
@@ -482,7 +762,7 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 		        //senvalues[7] = gyroscopeValues[1];
 		        //senvalues[8] = gyroscopeValues[2];
 		        
-		        // Ø‚èæ‚èü@-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+		        // åˆ‡ã‚Šå–ã‚Šç·šã€€-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 		        // TODO Auto-generated method stubf
 				// Low Pass Filter
 		        /*
@@ -495,15 +775,15 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 				rawAy = senvalues[1];
 				rawAz = senvalues[2];
 				*/
-	            // Še‰Á‘¬“x‚Ì‰‰ñ‘ª’è’l‚ğ‰Šú’l‚Æ‚µ‚ÄƒZƒbƒg
+	            // å„åŠ é€Ÿåº¦ã®åˆå›æ¸¬å®šå€¤ã‚’åˆæœŸå€¤ã¨ã—ã¦ã‚»ãƒƒãƒˆ
 	            if(asnflag == 0){
-	            	lowPassX = senvalues[0] ;// ‘O‰ñ‘ª’è’l‚Æ‚Ì·•ªAÀ•W•ÏŠ·‚µ‚È‚¢‰¼‚Ì’l‚ğ•ú‚è‚Ş
+	            	lowPassX = senvalues[0] ;// å‰å›æ¸¬å®šå€¤ã¨ã®å·®åˆ†ã€åº§æ¨™å¤‰æ›ã—ãªã„ä»®ã®å€¤ã‚’æ”¾ã‚Šè¾¼ã‚€
 	            	lowPassY = senvalues[1] ;
 	            	lowPassZ = senvalues[2] ;
 	            }else{
 					// Low Pass Filter
-					// uM† •½ŠŠ‰»v‚ÅGoogleŒŸõ‚·‚é‚ÆÚ‚µ‚¢î•ñ‚ª‚½‚­‚³‚ñŒ©‚Â‚©‚è‚Ü‚·B
-					lowPassX += (senvalues[0] - lowPassX) * k; // event.values[0‚©‚ç2] ‚Í‚»‚ê‚¼‚ê’[––À•WŒn‚Å‚Ì¶‚Ì‰Á‘¬“x‚Å‚·
+					// ã€Œä¿¡å· å¹³æ»‘åŒ–ã€ã§Googleæ¤œç´¢ã™ã‚‹ã¨è©³ã—ã„æƒ…å ±ãŒãŸãã•ã‚“è¦‹ã¤ã‹ã‚Šã¾ã™ã€‚
+					lowPassX += (senvalues[0] - lowPassX) * k; // event.values[0ã‹ã‚‰2] ã¯ãã‚Œãã‚Œç«¯æœ«åº§æ¨™ç³»ã§ã®ç”Ÿã®åŠ é€Ÿåº¦ã§ã™
 					lowPassY += (senvalues[1] - lowPassY) * k;
 					lowPassZ += (senvalues[2] - lowPassZ) * k;
 	            }
@@ -516,15 +796,15 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 				ay = rawAy;
 				az = rawAz;
 				/*
-	            // ƒˆ[Aƒsƒbƒ`Aƒ[ƒ‹‚Ì‰‰ñ‘ª’è’l‚ğ‰Šú’l‚Æ‚µ‚ÄƒZƒbƒg
+	            // ãƒ¨ãƒ¼ã€ãƒ”ãƒƒãƒã€ãƒ­ãƒ¼ãƒ«ã®åˆå›æ¸¬å®šå€¤ã‚’åˆæœŸå€¤ã¨ã—ã¦ã‚»ãƒƒãƒˆ
 	            if(jsnflag ==0){
 				    inityaw =  senvalues[3];
 				    initpitch =  senvalues[4];
 				    initroll =  senvalues[5];
-	            	// ƒtƒ‰ƒO‚ğƒZƒbƒg
+	            	// ãƒ•ãƒ©ã‚°ã‚’ã‚»ãƒƒãƒˆ
 				    jsnflag = 1;
 	            }
-	            // ƒWƒƒƒCƒ‚©‚çƒˆ[Aƒsƒbƒ`Aƒ[ƒ‹
+	            // ã‚¸ãƒ£ã‚¤ãƒ­ã‹ã‚‰ãƒ¨ãƒ¼ã€ãƒ”ãƒƒãƒã€ãƒ­ãƒ¼ãƒ«
 				xgyro   = senvalues[6]* interval/1000 +inityaw;
 				ygyro  = senvalues[7]* interval/1000 +initpitch;
 				zgyro  = senvalues[8]* interval/1000 +initroll;
@@ -534,7 +814,7 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 				roll  = zgyro * interval/1000 +initroll;
 				*/
 				/*
-	            // ƒˆ[Aƒsƒbƒ`Aƒ[ƒ‹‚Ì•Ï‰»•ª‚ğæ‚é
+	            // ãƒ¨ãƒ¼ã€ãƒ”ãƒƒãƒã€ãƒ­ãƒ¼ãƒ«ã®å¤‰åŒ–åˆ†ã‚’å–ã‚‹
 				yaw   = senvalues[3] -inityaw;
 				pitch = senvalues[4] -initpitch;
 				roll  = senvalues[5] -initroll;
@@ -542,15 +822,15 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 				initpitch = senvalues[4] ;
 				initroll  = senvalues[5] ;
 				*/
-	            // ƒˆ[Aƒsƒbƒ`Aƒ[ƒ‹
+	            // ãƒ¨ãƒ¼ã€ãƒ”ãƒƒãƒã€ãƒ­ãƒ¼ãƒ«
 				yaw   = senvalues[3] ;
 				pitch = senvalues[4] ;
 				roll  = senvalues[5] ;
 
 		        // TODO Auto-generated method stub
 				/*
-				// À•W•ÏŠ·
-				// ƒsƒbƒ`Eƒ[ƒ‹
+				// åº§æ¨™å¤‰æ›
+				// ãƒ”ãƒƒãƒãƒ»ãƒ­ãƒ¼ãƒ«
 				double nPitchRad = Math.toRadians(-pitch); // n means negative
 				double sinNPitch = Math.sin(nPitchRad);
 				double cosNPitch = Math.cos(nPitchRad);
@@ -559,13 +839,13 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 				double sinNRoll = Math.sin(nRollRad);
 				double cosNRoll = Math.cos(nRollRad);
 				 
-				double bx, by; // ˆê‘Ş”ğ
+				double bx, by; // ä¸€æ™‚é€€é¿
 				 
 				bx = rawAx * cosNRoll + rawAz * sinNRoll;
 				by = rawAx * sinNPitch * sinNRoll + rawAy * cosNPitch - rawAz * sinNPitch * cosNRoll;
 				az = -rawAx * cosNPitch * sinNRoll + rawAy * sinNPitch * cosNRoll + rawAz * cosNPitch * cosNRoll;
 				 
-				// •ûˆÊ
+				// æ–¹ä½
 				double nAzimuthRad = Math.toRadians(-yaw);
 				double sinNAzimuth = Math.sin(nAzimuthRad);
 				double cosNAzimuth = Math.cos(nAzimuthRad);
@@ -573,57 +853,57 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 				ax = bx * cosNAzimuth - by * sinNAzimuth;
 				ay = bx * sinNAzimuth + by * cosNAzimuth;
 				*/
-			    // ax, ay, az ‚ª‹‚Ü‚Á‚½Œã‚ÅA‘ª’èŠÔŠu‚ğ‹‚ß‚é
-			    nowTime = System.currentTimeMillis();	//ƒVƒXƒeƒ€‚ÌŒ»İ‚ğƒ~ƒŠ•bilongŒ^‚Ì”’lj‚Åæ“¾
-			    interval = nowTime - oldTime; 			// interval‚ğ‹‚ß‚é
-			    oldTime = nowTime;						// Œ»İ‚Ì‚ğ•Û‘¶
+			    // ax, ay, az ãŒæ±‚ã¾ã£ãŸå¾Œã§ã€æ¸¬å®šé–“éš”ã‚’æ±‚ã‚ã‚‹
+			    nowTime = System.currentTimeMillis();	//ã‚·ã‚¹ãƒ†ãƒ ã®ç¾åœ¨æ™‚åˆ»ã‚’ãƒŸãƒªç§’ï¼ˆlongå‹ã®æ•°å€¤ï¼‰ã§å–å¾—
+			    interval = nowTime - oldTime; 			// intervalã‚’æ±‚ã‚ã‚‹
+			    oldTime = nowTime;						// ç¾åœ¨ã®æ™‚åˆ»ã‚’ä¿å­˜
 			    /*
-		        Log.d("Sensor", interval+"ms X²‰Á‘¬“x:"+senvalues[0]+"@Y²‰Á‘¬“x:"+senvalues[1]+"@Z²‰Á‘¬“x:"+senvalues[2]+"\n" +
-		        		"•ûˆÊ:"+senvalues[3]+"@ƒsƒbƒ`:"  +senvalues[4]+"@ƒ[ƒ‹:"  +senvalues[5]);
+		        Log.d("Sensor", interval+"ms Xè»¸åŠ é€Ÿåº¦:"+senvalues[0]+"ã€€Yè»¸åŠ é€Ÿåº¦:"+senvalues[1]+"ã€€Zè»¸åŠ é€Ÿåº¦:"+senvalues[2]+"\n" +
+		        		"æ–¹ä½:"+senvalues[3]+"ã€€ãƒ”ãƒƒãƒ:"  +senvalues[4]+"ã€€ãƒ­ãƒ¼ãƒ«:"  +senvalues[5]);
 		        */
-	           // ‰Á‘¬“x‚ğÏ•ª‚·‚é
-	           //‰Á‘¬“x‚ğ[mm/s^2]AƒCƒ“ƒ^[ƒoƒ‹ƒ^ƒCƒ€‚ğ[s]‚Æ‚İ‚È‚µ‚ÄA
-	           dvx = ax * interval/1000; 	// ‘¬“x[m/s] ‚Ì•Ï‰»•ª‚É‚·‚é
+	           // åŠ é€Ÿåº¦ã‚’ç©åˆ†ã™ã‚‹
+	           //åŠ é€Ÿåº¦ã‚’[mm/s^2]ã€ã‚¤ãƒ³ã‚¿ãƒ¼ãƒãƒ«ã‚¿ã‚¤ãƒ ã‚’[s]ã¨ã¿ãªã—ã¦ã€
+	           dvx = ax * interval/1000; 	// é€Ÿåº¦[m/s] ã®å¤‰åŒ–åˆ†ã«ã™ã‚‹
 	           dvy = ay * interval/1000;
 	           dvz = az * interval;
-	           vx += dvx;					// ‘¬“x‚É•Ï‰»•ª‚ğ‘«‚µ‚±‚Ş
+	           vx += dvx;					// é€Ÿåº¦ã«å¤‰åŒ–åˆ†ã‚’è¶³ã—ã“ã‚€
 	           vy += dvy;
 	           vz += dvz;
 
 			    // ***********************************************************
 	           if( asnflag == 1 ){
-	        	   dx = vx * interval/1000;	// ‹——£[m] ‚Ì•Ï‰»•ª‚É‚·‚é
+	        	   dx = vx * interval/1000;	// è·é›¢[m] ã®å¤‰åŒ–åˆ†ã«ã™ã‚‹
 	        	   dy = vy * interval/1000;
 	        	   dz = vz * interval/1000;
-	        	   x += dx;					// ‹——£[m] ‚É‚·‚é
+	        	   x += dx;					// è·é›¢[m] ã«ã™ã‚‹
 	        	   y += dy;
 	        	   z += dz;
 	            }else{
-	            	vx = vy = vz = 0;		//@‘¬“x‰Šú‰»
-	            	x = y = z = 0 ;			//@ˆÚ“®‹——£‰Šú‰»
-	            	// ƒtƒ‰ƒO‚ğƒZƒbƒg
+	            	vx = vy = vz = 0;		//ã€€é€Ÿåº¦åˆæœŸåŒ–
+	            	x = y = z = 0 ;			//ã€€ç§»å‹•è·é›¢åˆæœŸåŒ–
+	            	// ãƒ•ãƒ©ã‚°ã‚’ã‚»ãƒƒãƒˆ
 				    asnflag = 1;
 	            }				
 		    }
 
-		    /* ƒ‰ƒWƒAƒ“‚©‚ç“x‚Ö‚Ì•ÏŠ·*/ 
+		    /* ãƒ©ã‚¸ã‚¢ãƒ³ã‹ã‚‰åº¦ã¸ã®å¤‰æ›*/ 
 		    int radianToDegree(float rad){
 		        return (int) Math.floor( Math.toDegrees(rad) ) ;
 		    }
 		    
 
-		    //¸“x•ÏXƒCƒxƒ“ƒg‚Ìˆ—
+		    //ç²¾åº¦å¤‰æ›´ã‚¤ãƒ™ãƒ³ãƒˆã®å‡¦ç†
 		    public void onAccuracyChanged(Sensor sensor,int accuracy) {
 		    }
 
-//@ƒZƒ“ƒT@‚±‚±‚Ü‚Å***********************************************************	
-// ‘ªˆÊ@‚±‚±‚©‚ç ***********************************************************
+//ã€€ã‚»ãƒ³ã‚µã€€ã“ã“ã¾ã§***********************************************************	
+// æ¸¬ä½ã€€ã“ã“ã‹ã‚‰ ***********************************************************
 		    @Override
 		    protected void onPause() {
 		        if(manager != null) {
 		            manager.removeUpdates(this);
 		        }
-		        super.onPause();	//‚±‚ê‚ğÈ‚­‚ÆƒAƒvƒŠ‚ª—‚¿‚é
+		        super.onPause();	//ã“ã‚Œã‚’çœãã¨ã‚¢ãƒ—ãƒªãŒè½ã¡ã‚‹
 		        
 		    }
 
@@ -631,13 +911,13 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 		    protected void onResume() {
 		        if(manager != null) {
 		            manager.requestLocationUpdates(LocationManager.
-		            		NETWORK_PROVIDER,	//ƒlƒbƒgƒ[ƒN‘ªˆÊ‚È‚ç‚±‚ê
-		            	//	GPS_PROVIDER		//GPS‘ªˆÊ‚È‚ç‚±‚ê
+		            		NETWORK_PROVIDER,	//ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯æ¸¬ä½ãªã‚‰ã“ã‚Œ
+		            	//	GPS_PROVIDER		//GPSæ¸¬ä½ãªã‚‰ã“ã‚Œ
 		            		0, 0, this);
 		        }
-		        super.onResume();	//‚±‚ê‚ğÈ‚­‚ÆƒAƒvƒŠ‚ª—‚¿‚é
+		        super.onResume();	//ã“ã‚Œã‚’çœãã¨ã‚¢ãƒ—ãƒªãŒè½ã¡ã‚‹
 
-		        //ƒZƒ“ƒT‚Ìˆ—‚ÌŠJn
+		        //ã‚»ãƒ³ã‚µã®å‡¦ç†ã®é–‹å§‹
 		        if(accelerometer != null)
 		            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
 		        if(magneticField != null)
@@ -647,12 +927,12 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 		        
 		        
 		    }
-		    // ‘ªˆÊ‚ªÀs‚³‚ê‚é‚ÆŒÄ‚Î‚ê‚é
+		    // æ¸¬ä½ãŒå®Ÿè¡Œã•ã‚Œã‚‹ã¨å‘¼ã°ã‚Œã‚‹
 		    @Override
 		    public void onLocationChanged(Location location) {
-    			Log("‘ªˆÊI");	//***********************************************************ƒeƒXƒgƒ|ƒCƒ“ƒgi‘ªˆÊ‚Éƒg[ƒXƒgo—Íj
-		    	locationArray[1] = "" + location.getLatitude();	//ˆÜ“x‚ğæ“¾‚µ”z—ñ‚É“ü‚ê‚é
-		        locationArray[2] = "" + location.getLongitude();//Œo“x‚ğæ“¾‚µ”z—ñ‚É“ü‚ê‚é
+    			Log("æ¸¬ä½ï¼");	//***********************************************************ãƒ†ã‚¹ãƒˆãƒã‚¤ãƒ³ãƒˆï¼ˆæ¸¬ä½æ™‚ã«ãƒˆãƒ¼ã‚¹ãƒˆå‡ºåŠ›ï¼‰
+		    	locationArray[1] = "" + location.getLatitude();	//ç·¯åº¦ã‚’å–å¾—ã—é…åˆ—ã«å…¥ã‚Œã‚‹
+		        locationArray[2] = "" + location.getLongitude();//çµŒåº¦ã‚’å–å¾—ã—é…åˆ—ã«å…¥ã‚Œã‚‹
 		    }
 
 		    @Override
@@ -667,23 +947,23 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 		    @Override
 		    protected void onStop() {
 		      super.onStop();
-		      //ƒZƒ“ƒT[‚Ìˆ—‚Ì’â~
+		      //ã‚»ãƒ³ã‚µãƒ¼ã®å‡¦ç†ã®åœæ­¢
 		      sensorManager.unregisterListener(this);
 		    }
 
-//@‘ªˆÊ@‚±‚±‚Ü‚Å***********************************************************	
-// Log‚ğƒg[ƒXƒg‚Å•\¦‚·‚éˆ—***********************************************************    
-// •\¦‚ÉŠÖ‚·‚éˆ—=====================================================================
-//ƒƒO‚ğƒg[ƒXƒg‚Å•\¦**********************************************************
+//ã€€æ¸¬ä½ã€€ã“ã“ã¾ã§***********************************************************	
+// Logã‚’ãƒˆãƒ¼ã‚¹ãƒˆã§è¡¨ç¤ºã™ã‚‹å‡¦ç†***********************************************************    
+// è¡¨ç¤ºã«é–¢ã™ã‚‹å‡¦ç†=====================================================================
+//ãƒ­ã‚°ã‚’ãƒˆãƒ¼ã‚¹ãƒˆã§è¡¨ç¤º**********************************************************
     public void Log(String string){
 		Toast.makeText(this, string, Toast.LENGTH_SHORT).show();    	
     }
     
- // ƒGƒ‰[•\¦ˆ—***********************************************************        
-//ƒGƒ‰[ƒƒbƒZ[ƒW‚ğƒAƒ‰[ƒg‚Å•\¦**************************************************
+ // ã‚¨ãƒ©ãƒ¼è¡¨ç¤ºå‡¦ç†***********************************************************        
+//ã‚¨ãƒ©ãƒ¼ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’ã‚¢ãƒ©ãƒ¼ãƒˆã§è¡¨ç¤º**************************************************
     private void error(String msg){
         AlertDialog.Builder builder = new AlertDialog.Builder (this);
-        builder.setTitle("ƒGƒ‰[");
+        builder.setTitle("ã‚¨ãƒ©ãƒ¼");
         builder.setMessage(msg);
         builder.setCancelable(true);
         
@@ -692,7 +972,7 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
     }
 
 }
-/* ‘ªˆÊ‚Ì‚à‚Æ‚Í‚±‚±«
+/* æ¸¬ä½ã®ã‚‚ã¨ã¯ã“ã“â†“
  * http://seesaawiki.jp/w/moonlight_aska/d/%B0%CC%C3%D6%BE%F0%CA%F3%A4%F2%BC%E8%C6%C0%A4%B9%A4%EB
  */ 
-//-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-ƒ\[ƒX‚±‚±‚Ü‚Å-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+//-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-ã‚½ãƒ¼ã‚¹ã“ã“ã¾ã§-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
