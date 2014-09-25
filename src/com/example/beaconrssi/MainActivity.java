@@ -17,6 +17,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.text.format.Time;
 import android.text.method.ScrollingMovementMethod;
+import android.view.Display;
+import android.view.Surface;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -39,27 +41,45 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
     private SensorManager sensorManager;		//センサーマネージャ
     private Sensor        accelerometer;		//加速度センサー
     private Sensor        orientation;  		//回転センサー
+//    private Sensor        gyroscope;			//ジャイロスコープ
+    private Sensor        magneticField;  		//地磁気センサー
     private double[] senvalues=new double[6];	//加速度と傾き値
 	private LocationManager manager = null; 	// GPS測位に用いる
 
-	double lowPassX,lowPassY,lowPassZ;		// 加速度を加重平均のため記録する
-	double rawAx,rawAy,rawAz;				// ハイパスフィルタを通った値
-    
-	private static double yaw,pitch,roll;	// 方位、ピッチ、ロール
-	private static double inityaw ,initpitch ,initroll;	// 方位、ピッチ、ロール初期値
+	private double yaw,pitch,roll;	// 方位、ピッチ、ロール
+	private double inityaw ,initpitch ,initroll;	// 方位、ピッチ、ロール初期値
 	
-	private static double ax,ay,az;					// 各方向加速度
-	private static int vx,vy,vz , dvx,dvy,dvz;		// 各方向速度、微小速度
-	private static int x,y,z , dx,dy,dz;				// 各方向移動距離、微小距離
-	private static long nowTime;
-	private static long oldTime;					// 前回測定時刻
+	private double lowPassX,lowPassY,lowPassZ;		// 加速度を加重平均のため記録する
+	private double rawAx,rawAy,rawAz;				// ハイパスフィルタを通った値
+	private double ax,ay,az;				// 各方向加速度
+	private double vx,vy,vz , dvx,dvy,dvz;	// 各方向速度、微小速度
+	private double x,y,z , dx,dy,dz;		// 各方向移動距離、微小距離
+//	private double xgyro,ygyro,zgyro ;	// 各方向各加速度（ジャイロ）
+	private long nowTime;
+	private long oldTime;				// 前回測定時刻
+	long interval;
 
-	static double offAx = +0.0;		// オフセット
-	static double offAy = -0.0;		// オフセット
-	static double offAz = +0.0;		// オフセット
-	static double k = 0.3;	// 加重平均の係数
-	static int asnflag = 0,jsnflag = 0;	// センサ初期化フラグ
+	static double offAx = -0.000;		// オフセット0.0072
+	static double offAy = -0.000;		// オフセット0.0021
+	static double offAz = -0.000;		// オフセット0.0053
+	static double k = 0.95;				// 加重平均の係数 最新計測値の重み
+	private int asnflag = 0,jsnflag = 0;	// センサ初期化フラグ
     
+	
+	//センサ改変　ここから***********************************************************
+	SensorEventListener mSensorEventListener;
+	float[] accelerometerValues = new float[3];
+	float[] geomagneticMatrix = new float[3];
+	float[] magneticValues = new float[3];
+//	float[] gyroscopeValues = new float[3];
+	float[] orientationValues = new float[3];
+	
+	float[] inR = new float[16];
+    float[] outR = new float[16];
+    float[] I = new float[16];
+	
+	boolean sensorReady;
+	//センサ改変　ここまで***********************************************************
 	// Bluetooth関係の変数
     private static final int REQUEST_ENABLE_BLUETOOTH = 1;
 	static BluetoothAdapter mBluetoothAdapter;
@@ -131,16 +151,21 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
         // GPSサービス取得
         manager = (LocationManager)getSystemService(LOCATION_SERVICE);
 // 測位関係の初期化 ここまで ***********************************************************
-
+//　センサ起動部　ここから***********************************************************
         //センサーマネージャの取得(1)
-        sensorManager=(SensorManager)getSystemService(
-            Context.SENSOR_SERVICE);
+        sensorManager=(SensorManager)getSystemService(Context.SENSOR_SERVICE);
         //センサーの取得(2)
         List<Sensor> list;
         list=sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
         if (list.size()>0) accelerometer=list.get(0);
-        list=sensorManager.getSensorList(Sensor.TYPE_ORIENTATION);
-        if (list.size()>0) orientation=list.get(0);
+        list=sensorManager.getSensorList(Sensor.TYPE_MAGNETIC_FIELD);
+        if(list.size()>0) magneticField = list.get(0);
+//        list=sensorManager.getSensorList(Sensor.TYPE_GYROSCOPE);
+//        if(list.size()>0) gyroscope = list.get(0);
+
+
+        
+//　センサ起動部　ここまで***********************************************************
         
         // 以下表示関係-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
         // readyテキストを表示させる[uedaデバッグ]
@@ -181,10 +206,8 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 			    asnflag = 0;
 			    jsnflag = 0;
 			    
-                yaw = pitch = roll = 0;			// 方位、ピッチ、ロール
-            	lowPassX = lowPassY = 0;	// オフセット
-            	lowPassZ = 9.8066;
-            	rawAx = rawAy = rawAz = 0;			// 初期化
+                yaw = pitch = roll = 0;		// 方位、ピッチ、ロール
+            	rawAx = rawAy =rawAz =0; 
                 
             }
         });
@@ -255,23 +278,40 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
                     time.setToNow();					//現在の時刻を設定
                     locationArray[0] = time.year + "年" + (time.month+1) + "月" + time.monthDay + "日  "+ time.hour + "時" + time.minute + "分" + time.second + "秒";
 
-                    // システム時刻を表示する
-                    mResultView.append("システム時刻："+nowTime+"\n");
-                    // 時刻、緯度、経度を表示する
-                    mResultView.append("時刻："+locationArray[0]+"\t\t緯度："+locationArray[1]+"  経度："+locationArray[2]+"\n");
-                    // 加速度と傾きを表示する
-                    mResultView.append( "X軸a:"+senvalues[0]+"　Y軸a:"+senvalues[1]+"　Z軸a:"+senvalues[2]+"\n");
-                    mResultView.append( "Y:"+senvalues[3]+"\t\t\tyaw："+yaw+"\nP:"  +senvalues[4]+"\t\t\tpitch："+pitch+"\nR:"  +senvalues[5]+"\t\t\troll："+roll+"\n");
-                    mResultView.append( "rawAx:"+rawAx+"\n rawAy:"+rawAy+"\n rawAz:"+rawAz+"\n以下座標変換後の値\nax:"+ax+"mm/s^2\n ay:"+ay+"mm/s^2\n az:"+az+"mm/s^2\n\n");
+                    // システム時刻 、時刻、緯度、経度を表示する
+                    mResultView.append("システム時刻："+nowTime+"\n時刻："+locationArray[0]+"\t\t緯度："+locationArray[1]+"  経度："+locationArray[2]+"\n");
 
+                    
+                    // 加速度と傾きを表示する
+                    mResultView.append( "X軸a :"+ (String.format("%4.2f", senvalues[0])) + "m/s^2\t\t"+
+                    					"Y軸a :"+ (String.format("%4.2f", senvalues[1])) + "m/s^2\t\t"+
+                    					"Z軸a :"+ (String.format("%4.2f", senvalues[2]))+"m/s^2\n");
+                    mResultView.append( "rawY :"+ (String.format("%4.1f", senvalues[3])) + "deg\t\t\t" +
+                    					"rawP :"+ (String.format("%4.1f", senvalues[4])) + "deg\t\t\t"+
+                    					"rawR :"+ (String.format("%4.1f", senvalues[5])) +"deg\n"+
+                    					"yaw  :"+ (String.format("%4.1f", yaw))  + "deg\t\t\t"+
+                    					"pitch:"+ (String.format("%4.1f", pitch))+ "deg\t\t\t"+
+                    					"roll :"+ (String.format("%4.1f", roll)) + "deg\n");
+                    
+                    mResultView.append( "lowPassX:"+(String.format("%4.2f", lowPassX))+" m/s^2\t\t"+
+                    					"lowPassY:"+(String.format("%4.2f", lowPassY))+" m/s^2\t\t"+
+                    					"lowPassZ:"+(String.format("%4.2f", lowPassZ))+" m/s^2\n");
+                    mResultView.append( "以下変換後の値\n"+
+                    					"ax:"+(String.format("%4.2f", ax))+" m/s^2\t"+
+                    					"ay:"+(String.format("%4.2f", ay))+" m/s^2\t"+
+                    					"az:"+(String.format("%4.2f", az))+" m/s^2\n\n");
+                     
                     // 微小速度を表示する
-                    mResultView.append("dvx:"+dvx+"mm/s\tdvY:"+dvy+"mm/s\tdvz:"+dvz+"mm/s\n");
+                    mResultView.append( "dvx:"+(String.format("%5.2f",dvx))+"m/s\t"+
+                    					"dvY:"+(String.format("%5.2f",dvy))+"m/s\t"+
+                    					"dvz:"+(String.format("%5.2f",dvz))+"m/s\n");
                     // 速度を表示する
-                    mResultView.append("vX:"+vx+"mm/s\tvY:"+vy+"mm/s\tvZ:"+vz+"mm/s\n\n");
+                    mResultView.append("vX:"+(String.format("%5.2f",vx))+"m/s\tvY:"+(String.format("%5.2f",vy))+"m/s\tvZ:"+(String.format("%5.2f",vz))+"m/s\n\n");
                     // 微小距離を表示する
-                    mResultView.append("dx:"+dx+"mm\tdY:"+dy+"mm\tdz:"+dz+"mm\n");
+                    mResultView.append("dx:"+(String.format("%5.2f",dx))+"m\tdY:"+(String.format("%5.2f",dy))+"m\tdz:"+(String.format("%5.2f",dz))+"m\n");
                     // 移動距離を表示する
-                    mResultView.append("X:"+(int)x+"cm\tY:"+(int)y+"cm\tz:"+(int)z+"cm\n\n");
+                    mResultView.append("X:"+(int)x+"m\tY:"+(int)y+"m\tz:"+(int)z+"m\n\n");
+                    
            	//今回追加した部分　ここまで***********************************************************
 
                     // UUIDを表示
@@ -384,105 +424,193 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 		    }
 
 //　センサ　ここから***********************************************************		
-
-			@Override
-		    //センサーリスナーの処理(5)
+		    @Override
 		    public void onSensorChanged(SensorEvent event) {
-		        //加速度の取得0
-		        if (event.sensor==accelerometer) {
-		            senvalues[0]=event.values[0];	// 取得した値を配列に保存
-		            senvalues[1]=event.values[1];
-		            senvalues[2]=event.values[2];
-				    // ***********************************************************
+		    	//ネタ元　http://seesaawiki.jp/w/moonlight_aska/d/%BC%A7%B5%A4/%B2%C3%C2%AE%C5%D9%A5%BB%A5%F3%A5%B5%A1%BC%A4%C7%CA%FD%B0%CC%B3%D1/%B7%B9%A4%AD%A4%F2%B8%A1%BD%D0%A4%B9%A4%EB
+		        //加速度の取得
+		        if(event.sensor == accelerometer){
+		            accelerometerValues[0] = event.values[0];
+		            accelerometerValues[1] = event.values[1];
+		            accelerometerValues[2] = event.values[2];
+		        }
+		        //地磁気の取得
+		        if(event.sensor == magneticField){
+		            magneticValues[0] = event.values[0];
+		            magneticValues[1] = event.values[1];
+		            magneticValues[2] = event.values[2];
+		        }
+		        /*
+		        // ジャイロ（角加速度）の取得
+		        if(event.sensor == gyroscope) {
+		        	gyroscopeValues[0] = event.values[0];	// X軸の回転速度
+		        	gyroscopeValues[1] = event.values[1];	// Y軸の回転速度
+		        	gyroscopeValues[2] = event.values[2];	// Z軸の回転速度
+		          }
+		          */
+
+			//傾きの算出-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+		       // if (magneticValues != null && accelerometerValues != null && gyroscopeValues != null) {
+		        if (magneticValues != null && accelerometerValues != null ) {
+
+		            SensorManager.getRotationMatrix(inR, I, accelerometerValues, magneticValues);
+
+		            //画面の向きによって軸の変更可
+		            SensorManager.remapCoordinateSystem(inR, SensorManager.AXIS_X, SensorManager.AXIS_Y, outR);
+		            SensorManager.getOrientation(outR, orientationValues);
+		            
+		            //ラジアンから度への変換 及び方位の範囲を-180～180度から0～359度に変換
+		            /*
+		            float angle = radianToDegree(orientationValues[0]);
+		            if		(angle >= 0){ orientationValues[0] = angle;}
+		            else if (angle <  0){ orientationValues[0] = 360 + angle;}
+		            */
+
+		            orientationValues[0] = radianToDegree(orientationValues[0]);// 範囲の変換をしない
+		            orientationValues[1] = radianToDegree(orientationValues[1]);
+		            orientationValues[2] = radianToDegree(orientationValues[2]);
+		        }
+		    
+
+		        //出力するための配列に格納
+		        senvalues[0] = accelerometerValues[0]- offAx;
+		        senvalues[1] = accelerometerValues[1]- offAy;
+		        senvalues[2] = accelerometerValues[2]- offAz;
+		        senvalues[3] = orientationValues[0];
+		        senvalues[4] = orientationValues[1];
+		        senvalues[5] = orientationValues[2];
+		        //senvalues[6] = gyroscopeValues[0];
+		        //senvalues[7] = gyroscopeValues[1];
+		        //senvalues[8] = gyroscopeValues[2];
+		        
+		        // 切り取り線　-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+		        // TODO Auto-generated method stubf
+				// Low Pass Filter
+		        /*
+				lowPassX += (senvalues[0] - lowPassX) * k;
+				lowPassY += (senvalues[1] - lowPassY) * k;
+				lowPassZ += (senvalues[2] - lowPassZ) * k;
+				
+				// High Pass Filter
+				rawAx = senvalues[0];
+				rawAy = senvalues[1];
+				rawAz = senvalues[2];
+				*/
+	            // 各加速度の初回測定値を初期値としてセット
+	            if(asnflag == 0){
+	            	lowPassX = senvalues[0] ;// 前回測定値との差分、座標変換しない仮の値を放り込む
+	            	lowPassY = senvalues[1] ;
+	            	lowPassZ = senvalues[2] ;
+	            }else{
 					// Low Pass Filter
-					lowPassX += (senvalues[0] - lowPassX) * k;
+					// 「信号 平滑化」でGoogle検索すると詳しい情報がたくさん見つかります。
+					lowPassX += (senvalues[0] - lowPassX) * k; // event.values[0から2] はそれぞれ端末座標系での生の加速度です
 					lowPassY += (senvalues[1] - lowPassY) * k;
 					lowPassZ += (senvalues[2] - lowPassZ) * k;
-					// High Pass Filter
-					rawAx = senvalues[0] - lowPassX;
-					rawAy = senvalues[1] - lowPassY;
-					rawAz = senvalues[2] - lowPassZ;
-					//オフセット
-					rawAx -= offAx;
-					rawAy -= offAy;
-					rawAz -= offAz;
-					Log.d("Count","加速度");
-		        }
-		        //方向の取得
-		        if (event.sensor==orientation) {
-		            senvalues[3]=event.values[0];	// 取得した値を配列に保存
-		            senvalues[4]=event.values[1];
-		            senvalues[5]=event.values[2];
-		            
-		            if(jsnflag ==0){
-					    inityaw =  senvalues[3];
-					    initpitch =  senvalues[4];
-					    initroll =  senvalues[5];
-		            	// フラグをセット
-					    jsnflag = 1;
-		            }
-					yaw = senvalues[3] -inityaw;
-					pitch = senvalues[4] -initpitch;
-					roll = senvalues[5] -initroll;
+	            }
 
-					double nPitchRad = Math.toRadians(-pitch); // 各変数をラジアンへ変換、n means negative
-					double nRollRad = Math.toRadians(-roll);
-					double nyawRad = Math.toRadians(-yaw);
-		            
-					Log.d("Count","回転");
-			// ***********************************************************
-					// ピッチ
-					double sinNPitch = Math.sin(nPitchRad);
-					double cosNPitch = Math.cos(nPitchRad);
-					// ロール
-					double sinNRoll = Math.sin(nRollRad);
-					double cosNRoll = Math.cos(nRollRad);
-					// 方位（アジマス）
-					double sinNyaw = Math.sin(nyawRad);
-					double cosNyaw = Math.cos(nyawRad);
-		        
-					// 一時退避変数
-					double bx, by; 
-					bx = rawAx * cosNRoll + rawAz * sinNRoll;
-					by = rawAx * sinNPitch * sinNRoll + rawAy * cosNPitch - rawAz * sinNPitch * cosNRoll;
-					// 端末内部の座標から実空間での座標へ変換し、ローパスフィルタを通す
-					ax += ((bx * cosNyaw - by * sinNyaw)*1000 - ax )*k ;
-					ay += ((bx * sinNyaw + by * cosNyaw)*1000 - ay )*k ;
-					az += ((-rawAx * cosNPitch * sinNRoll + rawAy * sinNPitch * cosNRoll + rawAz * cosNPitch * cosNRoll)*1000 - az )*k ;
-			}
+				// High Pass Filter
+				rawAx = senvalues[0] - lowPassX;
+				rawAy = senvalues[1] - lowPassY;
+				rawAz = senvalues[2] - lowPassZ;
+				ax = rawAx;
+				ay = rawAy;
+				az = rawAz;
+				/*
+	            // ヨー、ピッチ、ロールの初回測定値を初期値としてセット
+	            if(jsnflag ==0){
+				    inityaw =  senvalues[3];
+				    initpitch =  senvalues[4];
+				    initroll =  senvalues[5];
+	            	// フラグをセット
+				    jsnflag = 1;
+	            }
+	            // ジャイロからヨー、ピッチ、ロール
+				xgyro   = senvalues[6]* interval/1000 +inityaw;
+				ygyro  = senvalues[7]* interval/1000 +initpitch;
+				zgyro  = senvalues[8]* interval/1000 +initroll;
+			    
+				yaw   = xgyro * interval/1000 +inityaw;
+				pitch = ygyro * interval/1000 +initpitch;
+				roll  = zgyro * interval/1000 +initroll;
+				*/
+				/*
+	            // ヨー、ピッチ、ロールの変化分を取る
+				yaw   = senvalues[3] -inityaw;
+				pitch = senvalues[4] -initpitch;
+				roll  = senvalues[5] -initroll;
+				inityaw   = senvalues[3] ;
+				initpitch = senvalues[4] ;
+				initroll  = senvalues[5] ;
+				*/
+	            // ヨー、ピッチ、ロール
+				yaw   = senvalues[3] ;
+				pitch = senvalues[4] ;
+				roll  = senvalues[5] ;
 
-			   // ax, ay, az が求まった後で
-			   nowTime = System.currentTimeMillis();	//システムの現在時刻をミリ秒（long型の数値）で取得
-			   long interval = nowTime - oldTime; // intervalをミリ秒から秒へ変換
-			   oldTime = nowTime;
+		        // TODO Auto-generated method stub
+				/*
+				// 座標変換
+				// ピッチ・ロール
+				double nPitchRad = Math.toRadians(-pitch); // n means negative
+				double sinNPitch = Math.sin(nPitchRad);
+				double cosNPitch = Math.cos(nPitchRad);
+				 
+				double nRollRad = Math.toRadians(-roll);
+				double sinNRoll = Math.sin(nRollRad);
+				double cosNRoll = Math.cos(nRollRad);
+				 
+				double bx, by; // 一時退避
+				 
+				bx = rawAx * cosNRoll + rawAz * sinNRoll;
+				by = rawAx * sinNPitch * sinNRoll + rawAy * cosNPitch - rawAz * sinNPitch * cosNRoll;
+				az = -rawAx * cosNPitch * sinNRoll + rawAy * sinNPitch * cosNRoll + rawAz * cosNPitch * cosNRoll;
+				 
+				// 方位
+				double nAzimuthRad = Math.toRadians(-yaw);
+				double sinNAzimuth = Math.sin(nAzimuthRad);
+				double cosNAzimuth = Math.cos(nAzimuthRad);
+				 
+				ax = bx * cosNAzimuth - by * sinNAzimuth;
+				ay = bx * sinNAzimuth + by * cosNAzimuth;
+				*/
+			    // ax, ay, az が求まった後で、測定間隔を求める
+			    nowTime = System.currentTimeMillis();	//システムの現在時刻をミリ秒（long型の数値）で取得
+			    interval = nowTime - oldTime; 			// intervalを求める
+			    oldTime = nowTime;						// 現在の時刻を保存
+			    /*
 		        Log.d("Sensor", interval+"ms X軸加速度:"+senvalues[0]+"　Y軸加速度:"+senvalues[1]+"　Z軸加速度:"+senvalues[2]+"\n" +
 		        		"方位:"+senvalues[3]+"　ピッチ:"  +senvalues[4]+"　ロール:"  +senvalues[5]);
-			   
-	           if(asnflag == 1){
-	        	   // ***********************************************************
-	        	   // 加速度を積分する
-	        	   dvx = (int) (ax * interval/1000); // 速度[mm/s] の変化分にする
-	        	   dvy = (int) (ay * interval/1000);
-	        	   dvz = (int) (az * interval/1000);
-	        	   vx += dvx;	// 速度に変化分を足しこむ
-	        	   vy += dvy;
-	        	   vz += dvz;
-	        	   
-	        	   
-	        	   dx = (int) (vx * interval/1000);	// 距離[mm] の変化分にする
-	        	   dy = (int) (vy * interval/1000);
-	        	   dz = (int) (vz * interval/1000);
-	        	   x += dx/10;						// 距離[cm] にする
-	        	   y += dy/10;
-	        	   z += dz/10;
-	        	   // ***********************************************************
+		        */
+	           // 加速度を積分する
+	           //加速度を[mm/s^2]、インターバルタイムを[s]とみなして、
+	           dvx = ax * interval/1000; 	// 速度[m/s] の変化分にする
+	           dvy = ay * interval/1000;
+	           dvz = az * interval;
+	           vx += dvx;					// 速度に変化分を足しこむ
+	           vy += dvy;
+	           vz += dvz;
+
+			    // ***********************************************************
+	           if( asnflag == 1 ){
+	        	   dx = vx * interval/1000;	// 距離[m] の変化分にする
+	        	   dy = vy * interval/1000;
+	        	   dz = vz * interval/1000;
+	        	   x += dx;					// 距離[m] にする
+	        	   y += dy;
+	        	   z += dz;
 	            }else{
-	            	vx = vy = vz = 0;					//　速度初期化
-	            	x = y = z = 0 ;						//　移動距離初期化
+	            	vx = vy = vz = 0;		//　速度初期化
+	            	x = y = z = 0 ;			//　移動距離初期化
 	            	// フラグをセット
 				    asnflag = 1;
-	            }
-			}
+	            }				
+		    }
+
+		    /* ラジアンから度への変換*/ 
+		    int radianToDegree(float rad){
+		        return (int) Math.floor( Math.toDegrees(rad) ) ;
+		    }
+		    
 
 		    //精度変更イベントの処理
 		    public void onAccuracyChanged(Sensor sensor,int accuracy) {
@@ -492,16 +620,15 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 // 測位　ここから ***********************************************************
 		    @Override
 		    protected void onPause() {
-		        // TODO Auto-generated method stub
 		        if(manager != null) {
 		            manager.removeUpdates(this);
 		        }
 		        super.onPause();	//これを省くとアプリが落ちる
+		        
 		    }
 
 		    @Override
 		    protected void onResume() {
-		        // TODO Auto-generated method stub
 		        if(manager != null) {
 		            manager.requestLocationUpdates(LocationManager.
 		            		NETWORK_PROVIDER,	//ネットワーク測位ならこれ
@@ -509,41 +636,33 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
 		            		0, 0, this);
 		        }
 		        super.onResume();	//これを省くとアプリが落ちる
+
+		        //センサの処理の開始
+		        if(accelerometer != null)
+		            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+		        if(magneticField != null)
+		            sensorManager.registerListener(this, magneticField, SensorManager.SENSOR_DELAY_GAME);
+		       // if(gyroscope != null)
+		       //     sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_UI);
 		        
-		        //センサーの処理の開始(3)
-		        if (accelerometer!=null) {
-		            sensorManager.registerListener(this,accelerometer,
-		                SensorManager.SENSOR_DELAY_GAME);
-		        }
-		        if (orientation!=null) {
-		            sensorManager.registerListener(this,orientation,
-		                SensorManager.SENSOR_DELAY_GAME);
-		        }
 		        
 		    }
 		    // 測位が実行されると呼ばれる
 		    @Override
 		    public void onLocationChanged(Location location) {
     			Log("測位！");	//***********************************************************テストポイント（測位時にトースト出力）
-		        // TODO Auto-generated method stub
 		    	locationArray[1] = "" + location.getLatitude();	//緯度を取得し配列に入れる
 		        locationArray[2] = "" + location.getLongitude();//経度を取得し配列に入れる
 		    }
 
 		    @Override
-		    public void onProviderDisabled(String provider) {
-		        // TODO Auto-generated method stub
-		    }
+		    public void onProviderDisabled(String provider) {}
 
 		    @Override
-		    public void onProviderEnabled(String provider) {
-		        // TODO Auto-generated method stub
-		    }
+		    public void onProviderEnabled(String provider) {}
 
 		    @Override
-		    public void onStatusChanged(String provider, int status, Bundle extras) {
-		        // TODO Auto-generated method stub
-		    }
+		    public void onStatusChanged(String provider, int status, Bundle extras) {}
 
 		    @Override
 		    protected void onStop() {
