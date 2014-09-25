@@ -553,16 +553,14 @@ public class MainActivity extends Activity implements LocationListener,SensorEve
                  	   timecntflag=2;
                     }
 
-                    /*
-                    //X = x座標変数？（変数が数値データの場合　+ ""でString型に変更)のように以下に必要データの代入（？を変数に変える）
-                    X = ? + "";
-                    Y = ? + "";
-                   	Z = ? + "";
-                   	Pitch = ? + "";
-                   	Roll = ? + "";
-                   	Azimuth = ? + "";
-                    */
-                    
+		    //データ代入
+                    X = senvalues[0] + "";
+                    Y = senvalues[1] + "";
+                    Z = senvalues[2] + "";
+                    Pitch = pitch + "";
+                    Roll = roll + "";
+                    Azimuth = yaw + "";
+
                     // ファイル書き込み
                     try {
                     	saveText = textlocationArray[0] + "," + textlocationArray[1] + "," + textlocationArray[2] + "," + X + "," + Y + "," + Z + "," + Pitch + "," + Roll + "," + Azimuth + ",";
